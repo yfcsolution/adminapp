@@ -18,8 +18,10 @@ export async function POST(req) {
     } else if (conversationId) {
       // If familyId is not provided, fetch data based on leadId
       console.log(`i received conversationId which is ${conversationId}`);
-      
-      webhooks = await Webhook.find({ _id:conversationId }).sort({ createdAt: 1 });
+
+      webhooks = await Webhook.find({ _id: conversationId }).sort({
+        createdAt: 1,
+      });
     } else {
       // If neither familyId nor leadId is provided, return an error
       return NextResponse.json(

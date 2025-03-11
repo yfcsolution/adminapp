@@ -13,28 +13,13 @@ export default function LoginForm() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role_id: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [roles, setRoles] = useState([]);
-
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const response = await axios.get("/api/roles/get");
-        setRoles(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching roles:", error);
-      }
-    };
-    fetchRoles();
-  }, []);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]:
-        e.target.name === "role_id" ? parseInt(e.target.value) : e.target.value,
+      [e.target.name]: e.target.value, // Properly updating the state
     });
   };
 
@@ -42,8 +27,6 @@ export default function LoginForm() {
     e.preventDefault();
 
     try {
-      console.log("form data is", formData);
-
       const response = await axios.post("/api/login", formData);
 
       setAccessToken(response.data.accessToken);
@@ -130,31 +113,7 @@ export default function LoginForm() {
                 </button>
               </div>
             </div>
-            <div>
-              <label
-                htmlFor="role_id"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Select Role
-              </label>
-              <select
-                name="role_id"
-                id="role_id"
-                value={formData.role_id}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-              >
-                <option value="" disabled>
-                  Select a role
-                </option>
-                {roles.map((role) => (
-                  <option key={role.role_id} value={role.role_id}>
-                    {role.role_name}
-                  </option>
-                ))}
-              </select>
-            </div>
+
             <button
               type="submit"
               className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors duration-300 shadow-lg"

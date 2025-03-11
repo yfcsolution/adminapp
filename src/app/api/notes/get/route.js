@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
-import Reminders from "@/models/Reminders";
-// Fetch reminders based on lead ID and type
+import Notes from "@/models/Notes";
+
 export const POST = async (req) => {
   try {
     await connectDB();
@@ -10,30 +10,30 @@ export const POST = async (req) => {
 
     if (!P_REL_ID || !P_REL_TYPE) {
       return NextResponse.json(
-        { error: "Missing required fields: P_REL_ID and P_REL_TYPE" },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Find reminders based on lead ID and type
-    const existingReminders = await Reminders.findOne({ P_REL_ID, P_REL_TYPE });
+    // Fetch Notes based on P_REL_ID and P_REL_TYPE
+    const NoteRecord = await Notes.findOne({ P_REL_ID, P_REL_TYPE });
 
-    if (!existingReminders || !existingReminders.Reminders.length) {
+    if (!NoteRecord) {
       return NextResponse.json(
-        { message: "No reminders found", reminders: [] },
+        { message: "No Notes found", data: [] },
         { status: 200 }
       );
     }
 
     return NextResponse.json(
       {
-        message: "Reminders fetched successfully",
-        reminders: existingReminders.Reminders.reverse(),
+        message: "Notes retrieved successfully",
+        data: NoteRecord.Notes.reverse(),
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error fetching reminders:", error);
+    console.error("Error fetching Notes:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

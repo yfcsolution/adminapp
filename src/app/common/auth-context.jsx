@@ -164,6 +164,7 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.get("/api/admin-info", {
       withCredentials: true,
     });
+    return response;
   };
 
   // get student info
@@ -172,6 +173,7 @@ export const AuthProvider = ({ children }) => {
       withCredentials: true,
     });
   };
+
   return (
     <AuthContext.Provider
       value={{

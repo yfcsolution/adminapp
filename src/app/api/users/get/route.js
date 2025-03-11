@@ -8,8 +8,8 @@ export const GET = async () => {
     // Connect to the database
     await connectDB();
 
-    // Fetch all users
-    const users = await User.find({}, "name email role_id");
+    // Fetch all users with all fields
+    const users = await User.find({});
 
     // Manually fetch roles and map role names
     const roleIds = users.map((user) => user.role_id);
@@ -22,12 +22,10 @@ export const GET = async () => {
     const usersWithRoles = users.map((user) => {
       const role = roles.find((r) => r.role_id === user.role_id);
       return {
-        ...user.toObject(),
+        ...user.toObject(), // Convert Mongoose document to plain object
         role_name: role ? role.role_name : "Unknown Role",
       };
     });
-
-    console.log("Users are:", usersWithRoles);
 
     return NextResponse.json({ users: usersWithRoles }, { status: 200 });
   } catch (error) {

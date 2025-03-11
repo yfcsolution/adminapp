@@ -138,13 +138,13 @@ export default function Search() {
                 setLoading(true);
                 setError("");
                 try {
-                  const res = await fetch(
-                    `/api/leads/search?query=${query}&field=${field}`
-                  );
-                  const data = await res.json();
+                  const res = await axios.post(`/api/leads/search`, {
+                    query: query,
+                    field: field,
+                  });
 
-                  if (res.ok) {
-                    setResults(data.leads || []); // Ensure it’s always an array
+                  if (res.data.data.length > 0) {
+                    setResults(res.data.data || []);
                   } else {
                     setError(data.message || "No leads found");
                   }

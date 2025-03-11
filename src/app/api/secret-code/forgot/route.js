@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyJWT } from "@/middleware/auth_middleware";
 import User from "@/models/User";
-import SecretCode from "@/models/secretCodeSchema";
+import bcrypt from "bcrypt"; // Import bcrypt for hashing
 
 export async function POST(req) {
   // Run the verifyJWT middleware to check if the user is authenticated
@@ -33,19 +33,13 @@ export async function POST(req) {
       );
     }
 
-    // Now that the admin is authenticated, find the existing secret code entry
-    const secretCodeEntry = await SecretCode.findOne();
+    // Hash the new secret code using bcrypt
+    const saltRounds = 10; // Number of salt rounds for bcrypt
+    const hashedSecreteCode = await bcrypt.hash(newCode, saltRounds);
 
-    if (!secretCodeEntry) {
-      return NextResponse.json(
-        { message: "Secret code not found" },
-        { status: 404 }
-      );
-    }
-
-    // Update the secret code with the new code from the frontend
-    secretCodeEntry.code = newCode;
-    await secretCodeEntry.save();
+    // Update only the secreteCode field with the hashed value
+    user.secreteCode = hashedSecreteCode;
+    await user.save(); // Save the updated user document
 
     // Return a success response indicating that the secret code was updated
     return NextResponse.json(

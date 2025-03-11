@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import LeadsForm from "@/models/LeadsForm";
+import User from "@/models/User";
 import { transporter } from "../config/nodemailer";
 import axios from "axios";
 import Webhook from "@/models/whatsappWebhookSchema";
 import DuplicateLeads from "@/models/DuplicateLeads";
+import LeadsStatus from "@/models/LeadsStatus";
 export const handleLeadsSubmit = async (req) => {
   const {
     FULL_NAME,
@@ -94,6 +96,7 @@ export const handleLeadsSubmit = async (req) => {
     }
 
     // Create new LeadForm if no duplicate is found
+    // Create new LeadForm if no duplicate is found
     const newFormData = await LeadsForm.create({
       FULL_NAME,
       EMAIL,
@@ -110,38 +113,40 @@ export const handleLeadsSubmit = async (req) => {
 
     if (!newFormData) throw new Error("Form creation failed.");
 
-    // Attempt to sync with Oracle
-    try {
-      const response = await newFormData.syncWithOracle();
-      console.log("Data successfully synced with Oracle.");
-    } catch (oracleError) {
-      console.error("Oracle sync failed:", oracleError.message);
-      // The cron job will handle resyncing unsynced leads later
-    }
-
-    // Send success response for new form submission
-    return NextResponse.json(
-      {
-        message: "Your form has been successfully submitted.",
-        success: true,
-        data: {
-          id: newFormData._id,
-          LEAD_ID: newFormData.LEAD_ID,
-          FULL_NAME,
-          EMAIL,
-          PHONE_NO,
-          REMARKS,
-          COUNTRY,
-          TIME_ZONE,
-          CURRENCY,
-          STATE,
-          LEAD_IP,
-          REQUEST_FORM,
-          STUDENTS: existingLead.STUDENTS,
-        },
+    // Send success response immediately (before sync)
+    const responseData = {
+      message: "Your form has been successfully submitted.",
+      success: true,
+      data: {
+        id: newFormData._id,
+        LEAD_ID: newFormData.LEAD_ID,
+        FULL_NAME,
+        EMAIL,
+        PHONE_NO,
+        REMARKS,
+        COUNTRY,
+        TIME_ZONE,
+        CURRENCY,
+        STATE,
+        LEAD_IP,
+        REQUEST_FORM,
+        STUDENTS: existingLead?.STUDENTS || [], // Avoids crash if `existingLead` is undefined
       },
-      { status: 201 }
-    );
+    };
+
+    // **Perform Oracle Sync in the background (non-blocking)**
+    newFormData
+      .syncWithOracle()
+      .then(() => console.log("Data successfully synced with Oracle."))
+      .catch((oracleError) =>
+        console.error(
+          "Oracle sync failed, will retry via cron job:",
+          oracleError.message
+        )
+      );
+
+    // **Return success response (independent of sync)**
+    return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       {
@@ -188,6 +193,7 @@ const sendEmail = async (mailOptions) => {
 };
 
 export const handleMessageSending = async (req) => {
+  const body = await req.json();
   const {
     id,
     LEAD_ID,
@@ -201,13 +207,13 @@ export const handleMessageSending = async (req) => {
     CURRENCY,
     LEAD_IP,
     REQUEST_FORM,
-  } = await req.json();
-
-  const appKey = getAppKey(PHONE_NO);
-
+  } = body;
   const errors = [];
-  const message1 = `
-  Assalam o Alaikum!  
+
+  try {
+    const appKey = getAppKey(PHONE_NO);
+
+    const message1 = ` Assalam o Alaikum!  
   🌟 Welcome to IlmulQuran.com!  
 
   Excited to begin your Qur'an learning journey? Enroll in a free trial class and explore our courses:  
@@ -230,25 +236,65 @@ export const handleMessageSending = async (req) => {
   If you’d like to provide further details to confirm your class, click the link below:  
   👉 https://ilmulquran.com/thank-you?id=${id}  
 
-  IlmulQuran Team  
-`;
+  IlmulQuran Team`;
 
-  // Send WhatsApp message
-  try {
-    await sendWhatsAppMessage(PHONE_NO, appKey, message1);
-    await LeadsForm.updateOne(
-      { LEAD_ID: LEAD_ID },
-      { WHATSAPP_STATUS: "Message sent successfully" }
-    );
+    // Send WhatsApp message
+    const response = await sendWhatsAppMessage(PHONE_NO, appKey, message1);
+    if (response?.data?.status_code === 200) {
+      const newMessage = {
+        text: message1,
+        isReply: false,
+        sender: appKey,
+        receiver: response.data.to,
+        createdAt: new Date(),
+      };
+
+      // Find if a conversation exists
+      let conversation = await Webhook.findOne({ leadId: LEAD_ID });
+
+      if (conversation) {
+        // Update existing conversation
+        await Webhook.updateOne(
+          { leadId: LEAD_ID },
+          { $push: { conversation: newMessage } }
+        );
+
+        // Call sendToOracle() after update
+        await conversation.sendToOracle();
+      } else {
+        // Create new conversation if not found
+        conversation = new Webhook({
+          leadId: LEAD_ID,
+          receiver: response.data.to,
+          conversation: [newMessage],
+          appkey: appKey,
+        });
+
+        await conversation.save();
+
+        // Call sendToOracle() after save
+        await conversation.sendToOracle();
+      }
+
+      // Update WhatsApp status
+      const updatedLead = await LeadsForm.updateOne(
+        { LEAD_ID: LEAD_ID },
+        { $set: { WHATSAPP_STATUS: "Message sent successfully" } }
+      );
+
+      if (!updatedLead.modifiedCount) {
+        return NextResponse.json({ message: "Update failed" }, { status: 500 });
+      }
+    }
   } catch (error) {
+    console.error("WhatsApp sending failed:", error.message);
     await LeadsForm.updateOne(
       { LEAD_ID: LEAD_ID },
       { WHATSAPP_STATUS: error.message }
     );
-    errors.push(error.message);
   }
 
-  // Set up email options for admin notification
+  // Email Notifications
   const MailOptions = {
     from: "admin@ilmulquran.com",
     to: "dafiyahilmulquran@gmail.com",
@@ -266,8 +312,6 @@ export const handleMessageSending = async (req) => {
           <p><strong>IP Address:</strong> ${LEAD_IP}</p>
           <p><strong>Request Form:</strong> ${REQUEST_FORM}</p>`,
   };
-
-  // Reply email options for user confirmation
   const ReplyMailOptions = {
     from: "admin@ilmulquran.com",
     to: EMAIL,
@@ -312,26 +356,25 @@ export const handleMessageSending = async (req) => {
         </html>`,
   };
 
-  // Send emails
   try {
     await sendEmail(MailOptions);
   } catch (error) {
+    console.error("Email to admin failed:", error.message);
     errors.push(`Email to admin failed: ${error.message}`);
   }
 
   try {
     await sendEmail(ReplyMailOptions);
   } catch (error) {
+    console.error("Reply email failed:", error.message);
     errors.push(`Reply email failed: ${error.message}`);
   }
 
-  // Construct the response message
   const responseMessage =
     errors.length > 0
       ? `Data saved, but there were some issues: ${errors.join(", ")}`
       : "Data saved successfully, and messages sent!";
 
-  // Return the final response
   return NextResponse.json(
     { message: responseMessage },
     { status: errors.length > 0 ? 400 : 201 }
@@ -590,17 +633,66 @@ export const fetchLeadsData = async (req) => {
 // fetch single leadsdata
 export const fetchSingleLeadData = async (req) => {
   try {
-    const { id } = await req.json();
-    console.log("im recieving data");
+    const { id, leadId } = await req.json();
 
-    // Fetch all leads from the database
-    const lead = await LeadsForm.findById(id); // No filters, just return all leads
+    // Try to find the lead by LEAD_ID first
+    let lead = await LeadsForm.findOne({ LEAD_ID: leadId }).lean();
+    if (lead?.P_STATUS) {
+      const status = await LeadsStatus.findOne({ ID: lead.P_STATUS }).lean();
+      lead.P_STATUS = status.NAME || "N/A"; // If no status found, return null
+    }
+    // If not found, then try to find by _id
+    if (!lead) {
+      lead = await LeadsForm.findById(id);
+    }
 
+    // If no lead is found by either method, return an error
     if (!lead) {
       return NextResponse.json({ message: "No lead found" }, { status: 404 });
     }
+    // Manually populate P_STATUS from LeadsStatus based on ID
 
-    // Return the fetched leads data
+    // Return the fetched lead data
+    return NextResponse.json(
+      {
+        message: "Leads fetched successfully",
+        data: lead,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error fetching lead:", error);
+    return NextResponse.json(
+      { message: "Error fetching leads. Please try again later." },
+      { status: 500 }
+    );
+  }
+};
+// fetch single leadsdata
+export const fetchSingleLeadProfileData = async (req) => {
+  try {
+    const { id, leadId } = await req.json();
+
+    // Try to find the lead by LEAD_ID first
+    let lead = await LeadsForm.findOne({ LEAD_ID: leadId }).lean();
+    if (lead?.P_STATUS) {
+      const status = await LeadsStatus.findOne({ ID: lead.P_STATUS }).lean();
+      lead.P_STATUS = status.NAME || "N/A"; // If no status found, return null
+    }
+    // If not found, then try to find by _id
+    if (!lead) {
+      lead = await LeadsForm.findById(id);
+    }
+
+    // If no lead is found by either method, return an error
+    if (!lead) {
+      return NextResponse.json({ message: "No lead found" }, { status: 404 });
+    }
+    // Manually populate P_STATUS from LeadsStatus based on ID
+    // Mask sensitive fields before sending response
+    lead.EMAIL = "***************";
+    lead.PHONE_NO = "***************";
+    // Return the fetched lead data
     return NextResponse.json(
       {
         message: "Leads fetched successfully",
@@ -663,68 +755,90 @@ export const updateLead = async (req) => {
   try {
     // Parse the incoming JSON body
     const {
-      id,
+      P_SYNC_ID,
+      LEAD_ID,
       FULL_NAME,
       EMAIL,
       PHONE_NO,
       REMARKS,
       COUNTRY,
+      TIME_ZONE,
+      CURRENCY,
       STATE,
-      REQUEST_FORM,
-      CONTACT_METHOD,
-      STUDENT_NAME,
-      STUDENT_GENDER,
-      STUDENT_AGE,
-      PREFERRED_COURSES,
-      CLASS_TIMING,
-      SPECIAL_REQUIREMENTS,
+      DEVICE,
+      P_STATUS,
+      P_LASTCONTACT,
+      P_DATEASSIGNED,
+      P_LAST_STATUS_CHANGE,
+      P_DATE_CONVERTED,
+      P_LAST_LEAD_STATUS,
+      P_ASSIGNED,
     } = await req.json();
 
-    // Ensure all required fields are present
-    if (!id) {
-      return NextResponse.json({ message: "ID is required" }, { status: 400 });
-    }
-
-    // Perform the update operation and wait for the result
-    const leadsTable = await LeadsForm.findByIdAndUpdate(
-      id,
-      {
-        FULL_NAME,
-        EMAIL,
-        PHONE_NO,
-        REMARKS,
-        COUNTRY,
-        STATE,
-        REQUEST_FORM,
-        CONTACT_METHOD,
-        STUDENT_NAME,
-        STUDENT_GENDER,
-        STUDENT_AGE,
-        PREFERRED_COURSES,
-        CLASS_TIMING,
-        SPECIAL_REQUIREMENTS,
-      },
-      { new: true }
-    ); // Use `new: true` to return the updated document
-
-    // If no lead is found or update failed, return a 404 response
-    if (!leadsTable) {
+    // Ensure P_SYNC_ID is provided
+    if (!P_SYNC_ID) {
       return NextResponse.json(
-        { message: "Lead not found or update failed" },
-        { status: 404 }
+        { message: "P_SYNC_ID is required" },
+        { status: 400 }
       );
     }
 
-    // Return the updated data as part of the response
+    // Find the existing lead
+    const existingLead = await LeadsForm.findById(P_SYNC_ID);
+    if (!existingLead) {
+      return NextResponse.json({ message: "Lead not found" }, { status: 404 });
+    }
+
+    // Update only fields that are provided in the request
+    const updatedFields = {
+      LEAD_ID: LEAD_ID || existingLead.LEAD_ID,
+      FULL_NAME: FULL_NAME || existingLead.FULL_NAME,
+      EMAIL: EMAIL || existingLead.EMAIL,
+      PHONE_NO: PHONE_NO || existingLead.PHONE_NO,
+      REMARKS: REMARKS || existingLead.REMARKS,
+      COUNTRY: COUNTRY || existingLead.COUNTRY,
+      TIME_ZONE: TIME_ZONE || existingLead.TIME_ZONE,
+      CURRENCY: CURRENCY || existingLead.CURRENCY,
+      STATE: STATE || existingLead.STATE,
+      DEVICE: DEVICE || existingLead.DEVICE,
+      P_STATUS: P_STATUS || existingLead.P_STATUS,
+      P_LASTCONTACT: P_LASTCONTACT || existingLead.P_LASTCONTACT,
+      P_DATEASSIGNED: P_DATEASSIGNED || existingLead.P_DATEASSIGNED,
+      P_LAST_STATUS_CHANGE:
+        P_LAST_STATUS_CHANGE || existingLead.P_LAST_STATUS_CHANGE,
+      P_DATE_CONVERTED: P_DATE_CONVERTED || existingLead.P_DATE_CONVERTED,
+      P_LAST_LEAD_STATUS: P_LAST_LEAD_STATUS || existingLead.P_LAST_LEAD_STATUS,
+      P_ASSIGNED: P_ASSIGNED || existingLead.P_ASSIGNED,
+    };
+
+    // Perform the update
+    const updatedLead = await LeadsForm.findByIdAndUpdate(
+      P_SYNC_ID,
+      updatedFields,
+      { new: true }
+    );
+
+    if (!updatedLead) {
+      return NextResponse.json({ message: "Update failed" }, { status: 500 });
+    }
+
+    // Attempt to sync with Oracle
+    if (typeof updatedLead.syncWithOracle === "function") {
+      try {
+        await updatedLead.syncWithOracle();
+        console.log("Data successfully synced with Oracle.");
+      } catch (oracleError) {
+        console.error("Oracle sync failed:", oracleError.message);
+      }
+    } else {
+      console.warn("syncWithOracle method is not defined in LeadsForm model.");
+    }
+
     return NextResponse.json(
-      {
-        message: "Your request was processed successfully",
-        updatedData: leadsTable, // Send the updated data back to the frontend
-      },
+      { message: "Lead updated successfully" },
       { status: 200 }
     );
   } catch (error) {
-    // Log the error and return a 500 response
     console.error("Error processing the request:", error);
     return NextResponse.json(
       { message: "Error in processing your request" },
@@ -1036,6 +1150,216 @@ export const groupLeads = async () => {
         message: "Error grouping duplicate leads.",
         error: error.message,
       },
+      { status: 500 }
+    );
+  }
+};
+
+export const fetchRoleBasedLeads = async (req) => {
+  try {
+    const { page, pageSize, secreteCode } = await req.json();
+    // Check if the user is authenticated
+    // NOTE: You need to implement proper authentication middleware to populate `req.user`
+    if (!req.user) {
+      return NextResponse.json(
+        { message: "User not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Find the user in the database
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+    const role_id = user.role_id;
+
+    const skip = (page - 1) * pageSize;
+    if (role_id == 12 || role_id == 13) {
+      // Fetch leads with pagination
+      const leads = await LeadsForm.find()
+        .sort({
+          updatedAt: -1,
+          _id: -1,
+        }) // Sort by updated_at first, then by _id
+        .skip(skip)
+        .limit(pageSize);
+
+      if (!leads || leads.length === 0) {
+        // Return empty data and total leads count if no leads found
+        return NextResponse.json({ data: [], total: 0 }, { status: 200 });
+      }
+      let maskedLeads;
+      if (Boolean(user.canViewSensitiveData)) {
+        maskedLeads = leads.map((lead) => ({
+          ...lead.toObject(),
+          VISIBLE: true,
+        }));
+      } else {
+        // Mask the EMAIL and PHONE_NO fields
+        maskedLeads = leads.map((lead) => ({
+          ...lead.toObject(),
+          EMAIL: "***********",
+          PHONE_NO: "***********",
+          VISIBLE: false,
+        }));
+      }
+
+      // Get the total count of leads to calculate total pages
+      const totalLeads = await LeadsForm.countDocuments();
+
+      // Return the masked leads and total count
+      return NextResponse.json(
+        { data: maskedLeads, total: totalLeads },
+        { status: 200 }
+      );
+    } else {
+      const staffid = user.staffid;
+
+      // Fetch leads with pagination
+      const leads = await LeadsForm.find({
+        P_ASSIGNED: staffid,
+      })
+        .sort({
+          updatedAt: -1,
+          _id: -1,
+        }) // Sort by updated_at first, then by _id
+        .skip(skip)
+        .limit(pageSize);
+
+      if (!leads || leads.length === 0) {
+        // Return empty data and total leads count if no leads found
+        return NextResponse.json({ data: [], total: 0 }, { status: 200 });
+      }
+
+      // Mask the EMAIL and PHONE_NO fields
+      const maskedLeads = leads.map((lead) => ({
+        ...lead.toObject(),
+        EMAIL: "***********",
+        PHONE_NO: "***********",
+      }));
+
+      // Get the total count of leads to calculate total pages
+      const totalLeads = await LeadsForm.countDocuments();
+
+      // Return the masked leads and total count
+      return NextResponse.json(
+        { data: maskedLeads, total: totalLeads },
+        { status: 200 }
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching leads:", error);
+    return NextResponse.json(
+      { message: "An error occurred while fetching leads" },
+      { status: 500 }
+    );
+  }
+};
+
+export const searchRoleBasedLeads = async (req) => {
+  try {
+    // Extract data from the request body
+
+    const { query, field, skip = 0, pageSize = 10 } = await req.json();
+
+    // Check if query and field are provided
+    if (!query || !field) {
+      return NextResponse.json(
+        { message: "Query and field are required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if the user is authenticated
+    if (!req.user) {
+      return NextResponse.json(
+        { message: "User not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Find the user in the database
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    const role_id = user.role_id;
+
+    let searchQuery = {};
+
+    // Build the search query
+    if (field === "LEAD_ID" || field === "REQUEST_FORM") {
+      searchQuery = { [field]: Number(query) }; // Convert query to number
+    } else if (
+      [
+        "FULL_NAME",
+        "EMAIL",
+        "PHONE_NO",
+        "COUNTRY",
+        "STATE",
+        "LEAD_IP",
+      ].includes(field)
+    ) {
+      searchQuery = {
+        [field]: { $regex: query, $options: "i" }, // Case-insensitive search
+      };
+    } else {
+      return NextResponse.json({ message: "Invalid field" }, { status: 400 });
+    }
+
+    let leads;
+    let maskedLeads;
+
+    if (role_id === 12 || role_id === 13) {
+      console.log("search query is", searchQuery);
+
+      // Fetch leads with pagination for admin roles
+      leads = await LeadsForm.find(searchQuery)
+        .sort({ updatedAt: -1, _id: -1 })
+        .skip(Number(skip))
+        .limit(Number(pageSize));
+      console.log("leads are", leads);
+
+      if (!leads || leads.length === 0) {
+        return NextResponse.json({ data: [], total: 0 }, { status: 200 });
+      }
+
+      maskedLeads = leads; // Add masking logic here if needed
+    } else {
+      const staffid = user.staffid;
+
+      // Fetch leads for staff users with pagination
+      leads = await LeadsForm.find({
+        ...searchQuery,
+        P_ASSIGNED: staffid,
+      })
+        .sort({ updatedAt: -1, _id: -1 })
+        .skip(Number(skip))
+        .limit(Number(pageSize));
+
+      if (!leads || leads.length === 0) {
+        return NextResponse.json({ data: [], total: 0 }, { status: 200 });
+      }
+
+      maskedLeads = leads; // Add masking logic here if needed
+    }
+
+    // Get the total count of leads to calculate total pages
+    const totalLeads = await LeadsForm.countDocuments(searchQuery);
+
+    // Return the masked leads and total count
+    return NextResponse.json(
+      { data: maskedLeads, total: totalLeads },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error searching leads:", error);
+    return NextResponse.json(
+      { message: "Error searching the database" },
       { status: 500 }
     );
   }

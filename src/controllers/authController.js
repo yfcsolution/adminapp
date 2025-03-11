@@ -7,7 +7,6 @@ import Student from "@/models/Student";
 import SecretCode from "@/models/secretCodeSchema";
 import RolesSchema from "@/models/RolesSchema";
 import AdminLoginAttempt from "@/models/AdminLoginAttemptSchema";
-
 const accessTokenOptions = {
   httpOnly: true,
   secure: true, // Only send cookie over HTTPS
@@ -43,16 +42,26 @@ const genrateAccessAndRefreshTokens = async (userId) => {
 };
 
 export const registerUser = async (req) => {
-  const { name, email, password, role_id } = await req.json();
+  const {
+    staffid,
+    firstname,
+    lastname,
+    email,
+    password,
+    phonenumber,
+    role_id,
+    secreteCode,
+    canViewSensitiveData,
+  } = await req.json();
 
-  // Check for empty fields
+  // Check for empty required fields
   if (
-    [name, email, password, role_id].some(
+    [firstname, email, password, role_id].some(
       (field) => field == null || field?.toString().trim() === ""
     )
   ) {
     return NextResponse.json(
-      { message: "All fields are required, including role_id" },
+      { message: "First name, email, password, and role ID are required" },
       { status: 400 }
     );
   }
@@ -75,12 +84,20 @@ export const registerUser = async (req) => {
     );
   }
 
+  // Hash the secreteCode using bcrypt
+  const hashedSecreteCode = await bcrypt.hash(secreteCode, 10); // 10 is the salt rounds
+
   // Create new user
   const user = await User.create({
-    name,
+    staffid,
+    firstname,
+    lastname,
     email: email.toLowerCase(),
     password,
-    role_id: role_id, // Store ObjectId reference to Role
+    phonenumber,
+    role_id, // Store ObjectId reference to Role
+    secreteCode: hashedSecreteCode, // Save the hashed secreteCode
+    canViewSensitiveData,
   });
 
   // Check if user creation was successful
@@ -97,24 +114,22 @@ export const registerUser = async (req) => {
     { status: 201 }
   );
 };
-
 // update user import { NextResponse } from "next/server";
 
 export const updateUser = async (req) => {
   try {
-    const { user_id, name, email, role_id, newPassword } = await req.json();
-
-    // Check for empty fields
-    if (
-      [user_id, name, email, role_id].some(
-        (field) => field == null || field?.toString().trim() === ""
-      )
-    ) {
-      return NextResponse.json(
-        { message: "All fields are required, including user_id and role_id" },
-        { status: 400 }
-      );
-    }
+    const {
+      user_id,
+      staffid,
+      firstname,
+      lastname,
+      email,
+      phonenumber,
+      role_id,
+      secreteCode,
+      canViewSensitiveData,
+      newPassword,
+    } = await req.json();
 
     // Check if the user exists
     const user = await User.findById(user_id);
@@ -132,14 +147,19 @@ export const updateUser = async (req) => {
     }
 
     // Update user details
-    user.name = name;
-    user.email = email.toLowerCase();
-    user.role_id = role_id;
+    user.staffid = staffid ?? user.staffid;
+    user.firstname = firstname ?? user.firstname;
+    user.lastname = lastname ?? user.lastname;
+    user.email = email ? email.toLowerCase() : user.email;
+    user.phonenumber = phonenumber ?? user.phonenumber;
+    user.role_id = role_id ?? user.role_id;
+    user.canViewSensitiveData =
+      canViewSensitiveData ?? user.canViewSensitiveData;
 
-    // Update password if provided
-    if (newPassword && newPassword.trim() !== "") {
+    // Hash secreteCode if provided, otherwise keep the existing one
+    if (secreteCode) {
       const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(newPassword, salt);
+      user.secreteCode = await bcrypt.hash(secreteCode, salt);
     }
 
     await user.save();
@@ -195,18 +215,11 @@ export const deleteUser = async (req) => {
 
 export const loginUser = async (req) => {
   try {
-    const { email, password, role_id } = await req.json();
+    const { email, password } = await req.json();
 
     if (!email) {
       return NextResponse.json(
         { message: "Email is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!role_id) {
-      return NextResponse.json(
-        { message: "Role ID is required" },
         { status: 400 }
       );
     }
@@ -233,23 +246,6 @@ export const loginUser = async (req) => {
       return NextResponse.json(
         { message: "User does not exist" },
         { status: 404 }
-      );
-    }
-
-    // Check role validity
-    if (user.role_id.toString() !== role_id.toString()) {
-      await AdminLoginAttempt.create({
-        adminId: user._id,
-        email,
-        ipAddress,
-        userAgent,
-        status: "failed",
-        reason: "Invalid role for this user",
-      });
-
-      return NextResponse.json(
-        { message: "Invalid role for this user" },
-        { status: 403 }
       );
     }
 
@@ -370,7 +366,7 @@ export const getAdminData = async (req) => {
 
     // Clear the refreshToken in the database
     const data = await User.findById(req.user._id).select(
-      "-password -createdAt -updatedAt -refreshToken"
+      "-password -createdAt -updatedAt -refreshToken "
     );
 
     // Create the response

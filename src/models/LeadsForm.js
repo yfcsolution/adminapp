@@ -84,6 +84,34 @@ const leadsSchema = new mongoose.Schema(
       type: Boolean,
       default: false, // Track whether the lead has been synced to Oracle
     },
+    P_STATUS: {
+      type: Number,
+      default: 0, // Default value for status
+    },
+    P_LASTCONTACT: {
+      type: String,
+      default: "", // Default empty string
+    },
+    P_DATEASSIGNED: {
+      type: String,
+      default: "", // Default empty string
+    },
+    P_LAST_STATUS_CHANGE: {
+      type: String,
+      default: "", // Default empty string
+    },
+    P_DATE_CONVERTED: {
+      type: String,
+      default: "", // Default empty string
+    },
+    P_LAST_LEAD_STATUS: {
+      type: Number,
+      default: 0, // Default value for last lead status
+    },
+    P_ASSIGNED: {
+      type: Number,
+      default: 1,
+    },
   },
   {
     timestamps: true,
@@ -119,7 +147,8 @@ leadsSchema.methods.syncWithOracle = async function () {
     }
 
     // Send the lead data to Oracle
-    const response = await axios.post(oracleEndpoint, {
+    const payload = {
+      P_SYNC_ID: this._id.toString(),
       LEAD_ID: this.LEAD_ID,
       FULL_NAME: this.FULL_NAME,
       EMAIL: "********",
@@ -133,7 +162,16 @@ leadsSchema.methods.syncWithOracle = async function () {
       REQUEST_FORM: this.REQUEST_FORM,
       WHATSAPP_STATUS: this.WHATSAPP_STATUS,
       DEVICE: deviceValue, // Add device value
-    });
+      P_STATUS: this.P_STATUS,
+      P_LASTCONTACT: this.P_LASTCONTACT,
+      P_DATEASSIGNED: this.P_DATEASSIGNED,
+      P_LAST_STATUS_CHANGE: this.P_LAST_STATUS_CHANGE,
+      P_DATE_CONVERTED: this.P_DATE_CONVERTED,
+      P_LAST_LEAD_STATUS: this.P_LAST_LEAD_STATUS,
+      P_ASSIGNED: this.P_ASSIGNED,
+    };
+
+    const response = await axios.post(oracleEndpoint, payload);
 
     // Mark as synced
     this.syncedToOracle = true;

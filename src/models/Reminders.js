@@ -42,9 +42,16 @@ const RemindersSchema = new mongoose.Schema(
         P_ASSIGNED_TO: {
           type: Number,
         },
+        P_NOTIFY_BY_SMS_CLIENT: {
+          type: Number,
+          default: 0,
+        },
+        P_STARTDATE: {
+          type: String,
+        },
         SYNCED: {
           type: Boolean,
-          default: false, // Default false until synced
+          default: false,
         },
       },
     ],
@@ -55,7 +62,6 @@ const RemindersSchema = new mongoose.Schema(
 );
 
 // Method to send data to external API after adding a reminder
-// Method to send data to external API after adding a reminder
 RemindersSchema.methods.syncToExternalAPI = async function (
   newReminder,
   P_REL_ID,
@@ -63,7 +69,7 @@ RemindersSchema.methods.syncToExternalAPI = async function (
 ) {
   try {
     const payload = {
-      P_SYNC_ID: newReminder._id.toString(), // Ensure _id is passed as a string
+      P_SYNC_ID: newReminder._id.toString(),
       P_DESCRIPTION: newReminder.P_DESCRIPTION,
       P_DATE: newReminder.P_DATE,
       P_ISNOTIFIED: newReminder.P_ISNOTIFIED,
@@ -72,29 +78,30 @@ RemindersSchema.methods.syncToExternalAPI = async function (
       P_REL_TYPE: P_REL_TYPE,
       P_NOTIFY_BY_EMAIL: newReminder.P_NOTIFY_BY_EMAIL,
       P_CREATOR: newReminder.P_CREATOR,
-      P_CUSTOMER: newReminder.P_CUSTOMER,
-      P_CONTACT: newReminder.P_CONTACT,
-      P_ASSIGNED_TO: newReminder.P_ASSIGNED_TO,
+      P_NOTIFY_BY_SMS_CLIENT: newReminder.P_NOTIFY_BY_SMS_CLIENT,
+      P_STARTDATE: newReminder.P_STARTDATE,
     };
-    console.log("payload is", payload);
 
     const response = await axios.post(
-      "http://103.18.23.62:8080/apeks/apps/erp/notes/postdata",
-      payload
+      "http://103.18.23.62:8080/apeks/apps/erp/reminders/postdata",
+      payload // Removed JSON.stringify
     );
-    console.log("response is", response);
 
-    // Update the specific reminder's SYNCED field to true
-    await mongoose
-      .model("Reminders")
-      .updateOne(
-        { "Reminders._id": newReminder._id },
-        { $set: { "Reminders.$.SYNCED": true } }
-      );
+    if (response.data.status_code == 200) {
+      await mongoose
+        .model("Reminders")
+        .updateOne(
+          { "Reminders._id": newReminder._id },
+          { $set: { "Reminders.$.SYNCED": true } }
+        );
+    }
 
     return { success: true, message: "Data successfully synced" };
   } catch (error) {
-    console.error("Error syncing reminder data:", error);
+    console.error(
+      "Error syncing reminder data:",
+      error.response?.data || error.message
+    );
     return { success: false, message: "Failed to sync data" };
   }
 };

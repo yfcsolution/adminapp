@@ -3,9 +3,15 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    staffid: {
+      type: Number,
+    },
+    firstname: {
       type: String,
       required: true,
+    },
+    lastname: {
+      type: String,
     },
     email: {
       type: String,
@@ -14,9 +20,11 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    phonenumber: {
+      type: String,
+    },
     password: {
       type: String,
-      required: [true, "password is required"],
     },
     refreshToken: {
       type: String,
@@ -31,6 +39,14 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: true,
       ref: "Role", // References role_id in the Role schema
+    },
+    canViewSensitiveData: {
+      type: Boolean,
+      default: false, // Set to true for users who can view sensitive data
+    },
+    secreteCode: {
+      type: String,
+      default: "", // Set to true for users who can view sensitive data
     },
   },
   {

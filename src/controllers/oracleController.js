@@ -3,18 +3,11 @@ import LeadsForm from "@/models/LeadsForm";
 import Student from "@/models/Student";
 import bcrypt from "bcrypt";
 import SecretCode from "@/models/secretCodeSchema";
+import User from "@/models/User";
 export const fetchLeadsDataOracle = async (page = 1, pageSize = 10) => {
   try {
     // Calculate skip value based on current page
     const skip = (page - 1) * pageSize;
-    console.log(
-      "Fetching leads for Page:",
-      page,
-      "Skip:",
-      skip,
-      "Page Size:",
-      pageSize
-    );
 
     // Fetch leads with pagination
     const leads = await LeadsForm.find()
@@ -58,8 +51,15 @@ export const fetchLeadsContacts = async (req) => {
       );
     }
 
+    // Find the user in the database
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    const storedCode = user.secreteCode;
+
     // Fetch the secret code stored in the database
-    const storedCode = await SecretCode.findOne();
     if (!storedCode) {
       return NextResponse.json(
         { error: "No secret code found in the database" },
@@ -67,8 +67,8 @@ export const fetchLeadsContacts = async (req) => {
       );
     }
 
-    // Compare the provided CONTACT_SECRETE with the stored secret code
-    const isMatch = await bcrypt.compare(CONTACT_SECRETE, storedCode.code);
+    // Compare decrypted secret code with the provided one
+    const isMatch = await bcrypt.compare(CONTACT_SECRETE, storedCode);
     if (!isMatch) {
       return NextResponse.json(
         { message: "Invalid secret code" },
@@ -88,7 +88,6 @@ export const fetchLeadsContacts = async (req) => {
     if (EMAIL) {
       data = { EMAIL: lead.EMAIL || "Not available" };
     }
-
     // Check if PHONE_NO is requested and return only the PHONE_NO
     else if (PHONE_NO) {
       data = { PHONE_NO: lead.PHONE_NO || "Not available" };

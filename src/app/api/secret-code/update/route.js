@@ -36,7 +36,10 @@ export async function POST(req) {
       storedCode.code = newSecretCode;
       await storedCode.save();
 
-      return NextResponse.json({ success: true, message: "Secret code updated successfully" }, { status: 200 });
+      return NextResponse.json(
+        { success: true, message: "Secret code updated successfully" },
+        { status: 200 }
+      );
     } else {
       return NextResponse.json(
         { error: "Invalid current secret code" },
