@@ -8,25 +8,19 @@ import DuplicateLeads from "@/models/DuplicateLeads";
 import LeadsStatus from "@/models/LeadsStatus";
 export const handleLeadsSubmit = async (req) => {
   const {
+    LEAD_IP,
     FULL_NAME,
-    EMAIL,
     PHONE_NO,
+    EMAIL,
     REMARKS,
     COUNTRY,
     TIME_ZONE,
     CURRENCY,
     STATE,
-    LEAD_IP,
     REQUEST_FORM,
+    P_ASSIGNED,
+    P_STATUS,
   } = await req.json();
-
-  // Check for empty fields
-  if ([EMAIL, PHONE_NO].some((field) => !field)) {
-    return NextResponse.json(
-      { message: "All fields are required" },
-      { status: 400 }
-    );
-  }
 
   try {
     // Check for existing lead by EMAIL or PHONE_NO
@@ -49,6 +43,8 @@ export const handleLeadsSubmit = async (req) => {
         LEAD_IP,
         REQUEST_FORM,
         DATE_CREATED: new Date(),
+        P_ASSIGNED,
+        P_STATUS,
       };
 
       // Store in DuplicateLeadForm collection
@@ -91,7 +87,7 @@ export const handleLeadsSubmit = async (req) => {
             STUDENTS: existingLead.STUDENTS,
           },
         },
-        { status: 200 }
+        { status: 201 }
       );
     }
 
@@ -109,6 +105,9 @@ export const handleLeadsSubmit = async (req) => {
       LEAD_IP,
       REQUEST_FORM,
       WHATSAPP_STATUS: "no response",
+      DATE_CREATED: new Date(),
+      P_ASSIGNED,
+      P_STATUS,
     });
 
     if (!newFormData) throw new Error("Form creation failed.");

@@ -1,35 +1,34 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  FaTimes,
-  FaSearch,
-  FaFileExport,
-  FaArrowRight,
-  FaPen,
-  FaEye,
-  FaEyeSlash,
-  FaBell,
-} from "react-icons/fa";
+import { FaArrowRight, FaEye, FaEyeSlash, FaPlus } from "react-icons/fa";
 import Link from "next/link";
 import DashboardLayout from "../../../admin_dashboard_layout/layout";
-import Papa from "papaparse";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import AddLeadForm from "@/components/AddLeadForm";
 
 const LeadsData = () => {
   const [leadsData, setLeadsData] = useState([]);
-  const [dialogData, setDialogData] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [visibleFields, setVisibleFields] = useState({});
   const [passwordInput, setPasswordInput] = useState("");
   const [selectedField, setSelectedField] = useState(null);
   const [selectedLeadId, setSelectedLeadId] = useState(null);
-  const router = useRouter();
   const [visibleRemarks, setVisibleRemarks] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalLeads, setTotalLeads] = useState(0);
+  const [showAddLeadForm, setShowAddLeadForm] = useState(false);
+  const [newLead, setNewLead] = useState({
+    FULL_NAME: "",
+    PHONE_NO: "",
+    EMAIL: "",
+    STATE: "",
+    LEAD_IP: "",
+    REMARKS: "",
+    REQUEST_FORM: "",
+  });
 
   const fetchLeadsData = async () => {
     try {
@@ -99,6 +98,42 @@ const LeadsData = () => {
     }));
   };
 
+  const handleAddLeadClick = () => {
+    setShowAddLeadForm(true);
+  };
+
+  const handleAddLeadFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post("/api/leads/add", newLead);
+      if (response.status === 200) {
+        toast.success("Lead added successfully!");
+        setShowAddLeadForm(false);
+        setNewLead({
+          FULL_NAME: "",
+          PHONE_NO: "",
+          EMAIL: "",
+          STATE: "",
+          LEAD_IP: "",
+          REMARKS: "",
+          REQUEST_FORM: "",
+        });
+        fetchLeadsData(); // Refresh the leads data
+      }
+    } catch (error) {
+      console.error("Error adding lead:", error);
+      toast.error("Failed to add lead.");
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewLead((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   useEffect(() => {
     fetchLeadsData();
   }, [page, pageSize]);
@@ -119,6 +154,7 @@ const LeadsData = () => {
       toast.error("Error occurred during sync:", error.message);
     }
   };
+
   return (
     <>
       <DashboardLayout>
@@ -138,7 +174,17 @@ const LeadsData = () => {
                 Search Leads
               </Link>
             </label>
+            <button
+              onClick={handleAddLeadClick}
+              className="ml-4 bg-teal-600 text-white px-6 py-[10px] rounded-full hover:bg-teal-700 font-semibold text-lg transition-colors duration-300 ease-in-out cursor-pointer shadow-md hover:shadow-lg"
+            >
+              Add Lead
+            </button>
           </div>
+
+          {showAddLeadForm && (
+            <AddLeadForm setShowAddLeadForm={setShowAddLeadForm} />
+          )}
 
           {showPasswordModal && (
             <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">

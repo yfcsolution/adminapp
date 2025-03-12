@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "../../../admin_dashboard_layout/layout";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import Link from "next/link";
 
 export default function Search() {
   const router = useRouter();
@@ -211,7 +212,12 @@ export default function Search() {
                   {(results.length > 0 ? results : allLeads).map((lead) => (
                     <tr key={lead.LEAD_ID} className="hover:bg-teal-50">
                       <td className="py-3 px-4">{lead.LEAD_ID}</td>
-                      <td className="py-3 px-4">{lead.FULL_NAME}</td>
+                      <Link
+                        href={`/admin/leads1/leads-data/profile/${lead.LEAD_ID}`}
+                        className="text-lg font-bold text-teal-700 mb-2 hover:underline"
+                      >
+                        {lead.FULL_NAME}
+                      </Link>
                       <td className="py-3 px-4">{lead.PHONE_NO}</td>
                       <td className="py-3 px-4">{lead.EMAIL}</td>
                       <td className="py-3 px-4">{lead.STATE}</td>

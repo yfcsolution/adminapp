@@ -33,7 +33,7 @@
     "lucide-react": "^0.475.0",
     "moment-timezone": "^0.5.47",
     "mongoose": "^8.10.1",
-    "next": "15.1.7",
+    "next": "15.2.2",
     "nodemailer": "^6.10.0",
     "papaparse": "^5.5.2",
     "react": "^18.3.1",
