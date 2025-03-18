@@ -104,6 +104,10 @@ const leadsSchema = new mongoose.Schema(
       type: String,
       default: "", // Default empty string
     },
+    DEVICE: {
+      type: Number,
+      default: 4, // Default empty string
+    },
     P_LAST_LEAD_STATUS: {
       type: Number,
       default: 0, // Default value for last lead status

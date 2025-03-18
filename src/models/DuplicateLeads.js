@@ -73,6 +73,10 @@ const DuplicateLeadsSchema = new mongoose.Schema(
       type: Number,
       default: 0, // Default value for assigned
     },
+    DEVICE: {
+      type: Number,
+      default: 4, // Default empty string
+    },
   },
   {
     timestamps: true,

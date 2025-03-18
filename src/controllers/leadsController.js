@@ -22,6 +22,18 @@ export const handleLeadsSubmit = async (req) => {
     P_STATUS,
   } = await req.json();
 
+  let DEVICE = 4;
+  if (PHONE_NO) {
+    if (PHONE_NO.startsWith("+1")) {
+      DEVICE = 5; // For "+1", set device value to 5
+    } else if (PHONE_NO.startsWith("+61")) {
+      DEVICE = 2; // For "+61", set device value to 2
+    } else if (PHONE_NO.startsWith("+92")) {
+      DEVICE = 1; // For "+92", set device value to 1
+    }
+  }
+  console.log("DEvice is", DEVICE);
+
   try {
     // Check for existing lead by EMAIL or PHONE_NO
     const existingLead = await LeadsForm.findOne({
@@ -41,6 +53,7 @@ export const handleLeadsSubmit = async (req) => {
         CURRENCY,
         STATE,
         LEAD_IP,
+        DEVICE,
         REQUEST_FORM,
         DATE_CREATED: new Date(),
         P_ASSIGNED,
@@ -79,6 +92,7 @@ export const handleLeadsSubmit = async (req) => {
             PHONE_NO,
             REMARKS,
             COUNTRY,
+            DEVICE,
             TIME_ZONE,
             CURRENCY,
             STATE,
@@ -101,6 +115,7 @@ export const handleLeadsSubmit = async (req) => {
       COUNTRY,
       TIME_ZONE,
       CURRENCY,
+      DEVICE,
       STATE,
       LEAD_IP,
       REQUEST_FORM,
@@ -124,6 +139,7 @@ export const handleLeadsSubmit = async (req) => {
         PHONE_NO,
         REMARKS,
         COUNTRY,
+        DEVICE,
         TIME_ZONE,
         CURRENCY,
         STATE,

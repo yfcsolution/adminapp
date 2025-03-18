@@ -12,6 +12,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import EditLeadModal from "@/components/EditLead";
+import LeadChat from "@/components/LeadChat";
 
 const Page = () => {
   const [activeSection, setActiveSection] = useState("Profile");
@@ -76,14 +77,7 @@ const Page = () => {
             >
               <FaEdit />
             </button>
-            <a
-              href={`https://wa.me/${leadData?.PHONE_NO}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-teal-500 hover:text-teal-700 text-2xl"
-            >
-              <FaWhatsapp />
-            </a>
+
             <a
               href={`mailto:${leadData?.EMAIL}`}
               className="text-teal-500 hover:text-teal-700 text-2xl"
@@ -102,6 +96,7 @@ const Page = () => {
             "Classes",
             "Activity Log",
             "Duplicate Leads",
+            "Chat",
           ].map((section) => (
             <button
               key={section}
@@ -118,6 +113,7 @@ const Page = () => {
         {activeSection === "Reminders" && <Reminders leadId={lead_id} />}
         {activeSection === "Notes" && <Notes leadId={lead_id} />}
         {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}
+        {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}
         {activeSection === "Email Activity" && (
           <p>Email Activity will be here</p>
         )}
@@ -126,6 +122,7 @@ const Page = () => {
         {activeSection === "Duplicate Leads" && (
           <DuplicateLeads leadId={lead_id} />
         )}
+        {activeSection === "Chat" && <LeadChat leadId={lead_id} />}
         {/* Edit Lead Modal */}
         {isEditModalOpen && (
           <EditLeadModal
