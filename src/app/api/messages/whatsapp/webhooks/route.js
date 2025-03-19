@@ -12,6 +12,14 @@ export async function POST(req) {
     // Extract necessary data from the parsed webhook payload
     const { payload, sender, receiver } = parsedBody;
     const text = payload?.extendedTextMessage?.text || payload?.conversation;
+    // Check if the text is empty or falsy
+    if (!text) {
+      console.log("No text found in the payload, ignoring...");
+      return new Response(
+        JSON.stringify({ message: "No text found, ignoring." }),
+        { status: 200 }
+      );
+    }
     const senderTimestamp =
       payload?.messageContextInfo?.deviceListMetadata?.senderTimestamp;
     const recipientTimestamp =

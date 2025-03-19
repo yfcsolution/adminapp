@@ -90,13 +90,13 @@ const Page = () => {
         <div className="flex space-x-4 mb-5">
           {[
             "Profile",
+            "Chat",
             "Reminders",
             "Notes",
+            "Duplicate Leads",
             "Email Activity",
             "Classes",
             "Activity Log",
-            "Duplicate Leads",
-            "Chat",
           ].map((section) => (
             <button
               key={section}

@@ -14,7 +14,7 @@ export default function RootLayout({ children }) {
         // Handle error silently if necessary
         console.error("Error in cron job request:", error);
       });
-    }, 60000); // 60 seconds
+    }, 120000); // 60 seconds
 
     // Cleanup function to clear the interval when the component unmounts
     return () => clearInterval(intervalId);
