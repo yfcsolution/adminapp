@@ -36,6 +36,15 @@ export const handleLeadsSubmit = async (req) => {
 
   try {
     // Check for existing lead by EMAIL or PHONE_NO
+    if (!EMAIL || !PHONE_NO) {
+      return NextResponse.json(
+        {
+          message: "Email and Phone Number are required fields.",
+          success: false,
+        },
+        { status: 400 }
+      );
+    }
     const existingLead = await LeadsForm.findOne({
       $or: [{ EMAIL }, { PHONE_NO }],
     });
