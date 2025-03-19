@@ -150,6 +150,7 @@ const AddLeadForm = ({ setShowAddLeadForm, fetchLeadsData }) => {
                   onChange={handleInputChange}
                   placeholder="Phone No"
                   className="w-full border border-teal-500 rounded-lg p-2"
+                  required
                 />
               </div>
               <div>
@@ -163,6 +164,7 @@ const AddLeadForm = ({ setShowAddLeadForm, fetchLeadsData }) => {
                   onChange={handleInputChange}
                   placeholder="Email"
                   className="w-full border border-teal-500 rounded-lg p-2"
+                  required
                 />
               </div>
               <div>
