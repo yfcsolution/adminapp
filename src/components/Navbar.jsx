@@ -11,7 +11,7 @@ import {
   faLinkedin,
   faPinterest,
   faThreads,
-  faYoutube 
+  faYoutube,
 } from "@fortawesome/free-brands-svg-icons";
 import {
   PhoneIcon,
@@ -22,13 +22,13 @@ import {
   InformationCircleIcon,
   SupportIcon,
   ChevronDownIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
 } from "@heroicons/react/solid";
 import MobileMenu from "@/components/MobileMenu";
 import { useCountry } from "@/app/context/CountryContext";
 
 export default function Navbar() {
-  const { country } = useCountry()
+  const { country } = useCountry();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -155,9 +155,9 @@ export default function Navbar() {
     };
   }, []);
 
-  useEffect(() => {
-    console.log("country is ", country); // This effect runs whenever `country` changes.
-  }, [country]);
+  // useEffect(() => {
+  //   console.log("country is ", country); // This effect runs whenever `country` changes.
+  // }, [country]);
 
   return (
     <header className="mb-1">
@@ -171,26 +171,39 @@ export default function Navbar() {
                 className="h-18 w-24 mb-1"
               />
             </Link>
-            {country === 'United States of America' || country === 'Canada' ? (
-             
-             <Link href="https://wa.me/19142791693" className="hover:bg-teal-100 transition-colors duration-200 flex items-center gap-2 p-2 rounded-full" target="_blank" rel="noopener noreferrer">
-            
-               <PhoneIcon className="h-4 w-4 text-teal-600" />
-               <span className="text-teal-700">+19142791693</span>
-             </Link>
-
-           ) : country === 'Australia' || country === 'New Zealand' ? (
-             <Link href="https://wa.me/61480050048" className="hover:bg-teal-100 transition-colors duration-200 flex items-center gap-2 p-2 rounded-full" target="_blank" rel="noopener noreferrer">
-               <PhoneIcon className="h-4 w-4 text-teal-600" />
-               <span className="text-teal-700">+61480050048</span>
-             </Link>
-           ) : (
-             <Link href="https://wa.me/447862067920" className="transition-colors duration-200 flex items-center gap-2 p-2 rounded-full" target="_blank" rel="noopener noreferrer">
-            <div className="hover:bg-teal-100 flex items-center p-2 rounded-full">
-            <PhoneIcon className="h-4 w-4 text-teal-600 mr-2" />
-            <span className="text-teal-700">+447862067920</span>
-            </div>
-            </Link>)}
+            {country === "United States of America" || country === "Canada" ? (
+              <Link
+                href="https://wa.me/19142791693"
+                className="hover:bg-teal-100 transition-colors duration-200 flex items-center gap-2 p-2 rounded-full"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <PhoneIcon className="h-4 w-4 text-teal-600" />
+                <span className="text-teal-700">+19142791693</span>
+              </Link>
+            ) : country === "Australia" || country === "New Zealand" ? (
+              <Link
+                href="https://wa.me/61480050048"
+                className="hover:bg-teal-100 transition-colors duration-200 flex items-center gap-2 p-2 rounded-full"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <PhoneIcon className="h-4 w-4 text-teal-600" />
+                <span className="text-teal-700">+61480050048</span>
+              </Link>
+            ) : (
+              <Link
+                href="https://wa.me/447862067920"
+                className="transition-colors duration-200 flex items-center gap-2 p-2 rounded-full"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <div className="hover:bg-teal-100 flex items-center p-2 rounded-full">
+                  <PhoneIcon className="h-4 w-4 text-teal-600 mr-2" />
+                  <span className="text-teal-700">+447862067920</span>
+                </div>
+              </Link>
+            )}
           </div>
 
           <div className="hidden  lg:flex space-x-4 xl:space-x-6">
@@ -226,8 +239,8 @@ export default function Navbar() {
               {
                 href: "https://www.instagram.com/imqonline/",
                 icon: faInstagram,
-              },         
-                   { href: "https://www.youtube.com/@imqonline", icon: faYoutube },
+              },
+              { href: "https://www.youtube.com/@imqonline", icon: faYoutube },
 
               { href: "https://www.threads.net/@imqonline", icon: faThreads },
             ].map((social, index) => (

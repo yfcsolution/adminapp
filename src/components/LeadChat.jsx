@@ -106,6 +106,70 @@ const LeadChat = ({ leadId }) => {
     }
   };
 
+  // Send a welcome message
+  const sendWelcomeMessage = async () => {
+    const welcomeMessage = ` Assalam o Alaikum!  
+  🌟 Welcome to IlmulQuran.com!  
+
+  Excited to begin your Qur'an learning journey? Enroll in a free trial class and explore our courses:  
+
+  📚 Courses Offered:  
+  - Quran Classes with Tajweed  
+  - Translation and Memorization  
+  - Taleem ul Islam (Islamic Education)  
+
+  👩‍🏫 Qualified Instructors:  
+  - Male & female teachers available 24/7 via Zoom/Teams.  
+  🌐 Multilingual Learning:  
+  - Courses are available in multiple languages.  
+
+  To schedule your free trial class, simply reply with:  
+  - Your Full Name  
+  - Preferred Date & Time (please mention your timezone)  
+
+  📧 Contact us at admin@ilmulquran.com  
+  If you’d like to provide further details to confirm your class, click the link below:  
+  👉 https://ap.ilmulquran.com/thank-you?id=${leadId}  
+
+  IlmulQuran Team`;
+    const receiver = messages.length
+      ? messages[messages.length - 1]?.isReply
+        ? messages[messages.length - 1]?.receiver
+        : messages[messages.length - 1]?.sender
+      : null; // Determine receiver based on isReply status
+
+    const payload = {
+      lead_id: leadId, // Use leadId directly
+      receiver: receiver,
+      appkey: appKey,
+      message: welcomeMessage,
+    };
+
+    try {
+      // Post the welcome message to the custom API
+      await axios.post("/api/messages/whatsapp/custom-message", payload);
+
+      // Update the local messages state
+      const newMessageData = {
+        ...payload,
+        isReply: true, // Simulate a reply
+        createdAt: new Date().toISOString(),
+        text: welcomeMessage, // Ensure message text is included
+      };
+      setMessages((prev) => [...prev, newMessageData]);
+
+      // Optionally fetch the updated messages list after sending the message
+      const response = await axios.post("/api/messages/whatsapp/chat", {
+        leadId,
+      });
+      const updatedMessages =
+        response.data.data?.flatMap((msg) => msg.conversation) || [];
+      setMessages(updatedMessages);
+    } catch (error) {
+      console.error("Error sending welcome message:", error);
+    }
+  };
+
   // Scroll to the bottom when new messages are added
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -117,10 +181,16 @@ const LeadChat = ({ leadId }) => {
     <div className="flex w-full justify-center min-h-screen md:px-4 bg-gray-100">
       <div className="w-full max-w-3xl bg-white rounded-lg shadow-lg flex flex-col">
         {/* Chat Header */}
-        {/* <div className="bg-teal-600 text-white px-6 py-4 rounded-t-lg">
+        <div className="bg-teal-600 text-white px-6 py-4 rounded-t-lg">
           <h2 className="text-2xl font-semibold">Chat</h2>
           <p className="text-sm opacity-90">User - Online</p>
-        </div> */}
+          <button
+            className="mt-2 px-4 py-2 bg-white text-teal-600 font-semibold text-sm rounded-lg hover:bg-gray-100 focus:ring-2 focus:ring-teal-600"
+            onClick={sendWelcomeMessage}
+          >
+            Send Welcome Message
+          </button>
+        </div>
 
         {/* Chat Messages */}
         <div className="h-[60vh] sm:h-[70vh] md:h-[80vh] max-h-screen overflow-y-auto p-4 bg-gray-50 flex-1 space-y-4">
