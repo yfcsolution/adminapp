@@ -60,11 +60,11 @@ const DuplicateLeads = ({ leadId }) => {
     <div className="min-h-screen bg-gray-100 p-4 sm:p-10">
       <div className="w-full max-w-5xl mx-auto">
         {leadsData.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
             {leadsData.map((lead, index) => (
               <div
                 key={index}
-                className="bg-white shadow-lg rounded-xl overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                className="bg-white  overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-teal-700 mb-4">

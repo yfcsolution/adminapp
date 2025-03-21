@@ -49,17 +49,17 @@ const Page = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6">
+      <div className=" sm:p-6">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="mb-4 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm sm:text-base"
+          className="mb-4 px-4 py-2 bg-gray-300 text-gray-700  hover:bg-gray-400 text-sm sm:text-base"
         >
           Back
         </button>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-lg p-4 mb-6">
+        <div className="bg-white  p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-center justify-between">
             {/* Profile Info */}
             <div className="flex items-center space-x-4 mb-4 sm:mb-0">
@@ -108,7 +108,7 @@ const Page = () => {
             <button
               key={section}
               onClick={() => setActiveSection(section)}
-              className={`px-3 py-2 text-sm sm:text-base rounded-md ${
+              className={`px-3 py-2 text-sm sm:text-base  ${
                 activeSection === section
                   ? "bg-teal-600 text-white"
                   : "bg-teal-100 text-teal-700 hover:bg-teal-200"
@@ -120,7 +120,7 @@ const Page = () => {
         </div>
 
         {/* Section Content */}
-        <div className="rounded-lg p-4">
+        <div className=" p-4">
           {activeSection === "Reminders" && <Reminders leadId={lead_id} />}
           {activeSection === "Notes" && <Notes leadId={lead_id} />}
           {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}

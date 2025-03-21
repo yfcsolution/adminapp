@@ -98,7 +98,7 @@ const LeadProfile = ({ leadId }) => {
 
   return (
     <div className="flex justify-center min-h-screen bg-gray-100 p-4 sm:p-10">
-      <div className="w-full max-w-5xl bg-white shadow-xl rounded-2xl border border-gray-300 p-6 sm:p-10">
+      <div className="w-full max-w-5xl bg-white    border-gray-300 p-6 sm:p-10">
         {data ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
