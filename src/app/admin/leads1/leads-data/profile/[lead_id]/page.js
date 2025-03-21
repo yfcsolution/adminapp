@@ -7,7 +7,7 @@ import Notes from "@/components/Notes";
 import LeadProfile from "@/components/LeadProfile";
 import DuplicateLeads from "@/components/DuplicateLeads";
 import LeadsStudents from "@/components/LeadsStudents";
-import { FaWhatsapp, FaEnvelope, FaEdit } from "react-icons/fa";
+import {FaEnvelope, FaEdit } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
@@ -49,45 +49,52 @@ const Page = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-5">
+      <div className="p-4 sm:p-6">
+        {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="mb-4 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+          className="mb-4 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm sm:text-base"
         >
           Back
         </button>
-        <div className="bg-white shadow-md rounded-lg p-5 mb-5 flex items-center justify-between">
-          {/* Profile Info */}
-          <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 bg-teal-500 text-white flex items-center justify-center rounded-full text-xl font-semibold">
-              {leadData?.FULL_NAME.charAt(0)}
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">
-                {leadData?.FULL_NAME}
-              </h2>
-              <p className="text-gray-500">Lead ID: {leadData?.LEAD_ID}</p>
-            </div>
-          </div>
-          {/* Contact Icons */}
-          <div className="flex space-x-4">
-            <button
-              onClick={handleEdit}
-              className="text-teal-500 hover:text-teal-700 text-2xl"
-            >
-              <FaEdit />
-            </button>
 
-            <a
-              href={`mailto:${leadData?.EMAIL}`}
-              className="text-teal-500 hover:text-teal-700 text-2xl"
-            >
-              <FaEnvelope />
-            </a>
+        {/* Profile Card */}
+        <div className="bg-white rounded-lg p-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between">
+            {/* Profile Info */}
+            <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-teal-500 text-white flex items-center justify-center rounded-full text-xl font-semibold">
+                {leadData?.FULL_NAME.charAt(0)}
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+                  {leadData?.FULL_NAME}
+                </h2>
+                <p className="text-sm sm:text-base text-gray-500">
+                  Lead ID: {leadData?.LEAD_ID}
+                </p>
+              </div>
+            </div>
+            {/* Contact Icons */}
+            <div className="flex space-x-4">
+              <button
+                onClick={handleEdit}
+                className="text-teal-500 hover:text-teal-700 text-2xl"
+              >
+                <FaEdit />
+              </button>
+              <a
+                href={`mailto:${leadData?.EMAIL}`}
+                className="text-teal-500 hover:text-teal-700 text-2xl"
+              >
+                <FaEnvelope />
+              </a>
+            </div>
           </div>
         </div>
+
         {/* Section Tabs */}
-        <div className="flex space-x-4 mb-5">
+        <div className="flex flex-wrap gap-2 mb-6">
           {[
             "Profile",
             "Chat",
@@ -101,28 +108,33 @@ const Page = () => {
             <button
               key={section}
               onClick={() => setActiveSection(section)}
-              className={`px-4 py-2 rounded-md text-white ${
-                activeSection === section ? "bg-teal-600" : "bg-teal-400"
+              className={`px-3 py-2 text-sm sm:text-base rounded-md ${
+                activeSection === section
+                  ? "bg-teal-600 text-white"
+                  : "bg-teal-100 text-teal-700 hover:bg-teal-200"
               }`}
             >
               {section}
             </button>
           ))}
         </div>
+
         {/* Section Content */}
-        {activeSection === "Reminders" && <Reminders leadId={lead_id} />}
-        {activeSection === "Notes" && <Notes leadId={lead_id} />}
-        {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}
-        {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}
-        {activeSection === "Email Activity" && (
-          <p>Email Activity will be here</p>
-        )}
-        {activeSection === "Classes" && <LeadsStudents leadId={lead_id} />}
-        {activeSection === "Activity Log" && <p>Activity Log will be here</p>}
-        {activeSection === "Duplicate Leads" && (
-          <DuplicateLeads leadId={lead_id} />
-        )}
-        {activeSection === "Chat" && <LeadChat leadId={lead_id} />}
+        <div className="rounded-lg p-4">
+          {activeSection === "Reminders" && <Reminders leadId={lead_id} />}
+          {activeSection === "Notes" && <Notes leadId={lead_id} />}
+          {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}
+          {activeSection === "Email Activity" && (
+            <p>Email Activity will be here</p>
+          )}
+          {activeSection === "Classes" && <LeadsStudents leadId={lead_id} />}
+          {activeSection === "Activity Log" && <p>Activity Log will be here</p>}
+          {activeSection === "Duplicate Leads" && (
+            <DuplicateLeads leadId={lead_id} />
+          )}
+          {activeSection === "Chat" && <LeadChat leadId={lead_id} />}
+        </div>
+
         {/* Edit Lead Modal */}
         {isEditModalOpen && (
           <EditLeadModal
