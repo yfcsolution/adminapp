@@ -118,7 +118,7 @@ const leadsSchema = new mongoose.Schema(
     },
     LM_FOLLOW_UP: {
       type: Number,
-      default: 0,
+      default: null,
     },
   },
   {
