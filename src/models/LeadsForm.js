@@ -116,6 +116,10 @@ const leadsSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+    LM_FOLLOW_UP: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -173,6 +177,7 @@ leadsSchema.methods.syncWithOracle = async function () {
       P_DATE_CONVERTED: this.P_DATE_CONVERTED,
       P_LAST_LEAD_STATUS: this.P_LAST_LEAD_STATUS,
       P_ASSIGNED: this.P_ASSIGNED,
+      LM_FOLLOW_UP: this.LM_FOLLOW_UP,
     };
 
     const response = await axios.post(oracleEndpoint, payload);

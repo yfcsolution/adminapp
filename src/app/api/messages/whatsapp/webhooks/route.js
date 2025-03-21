@@ -8,6 +8,7 @@ export async function POST(req) {
     // Retrieve the raw body of the request
     const rawBody = await req.text();
     const parsedBody = JSON.parse(rawBody);
+    console.log("parsed body ius", parsedBody);
 
     // Extract necessary data from the parsed webhook payload
     const { payload, sender, receiver } = parsedBody;

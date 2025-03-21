@@ -77,6 +77,10 @@ const DuplicateLeadsSchema = new mongoose.Schema(
       type: Number,
       default: 4, // Default empty string
     },
+    LM_FOLLOW_UP: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -120,6 +124,7 @@ DuplicateLeadsSchema.methods.syncWithOracle = async function () {
       P_DATE_CONVERTED: this.P_DATE_CONVERTED,
       P_LAST_LEAD_STATUS: this.P_LAST_LEAD_STATUS,
       P_ASSIGNED: this.P_ASSIGNED,
+      LM_FOLLOW_UP: this.LM_FOLLOW_UP,
     };
 
     // Send the lead data to Oracle

@@ -797,6 +797,7 @@ export const updateLead = async (req) => {
       P_DATE_CONVERTED,
       P_LAST_LEAD_STATUS,
       P_ASSIGNED,
+      LM_FOLLOW_UP,
     } = await req.json();
 
     // Ensure P_SYNC_ID is provided
@@ -833,6 +834,7 @@ export const updateLead = async (req) => {
       P_DATE_CONVERTED: P_DATE_CONVERTED || existingLead.P_DATE_CONVERTED,
       P_LAST_LEAD_STATUS: P_LAST_LEAD_STATUS || existingLead.P_LAST_LEAD_STATUS,
       P_ASSIGNED: P_ASSIGNED || existingLead.P_ASSIGNED,
+      LM_FOLLOW_UP: LM_FOLLOW_UP || existingLead.LM_FOLLOW_UP,
     };
 
     // Perform the update
