@@ -5,3 +5,4 @@ export async function POST(req) {
   await connectDB();
   return handleLeadsCustomMessages(req);
 }
+
