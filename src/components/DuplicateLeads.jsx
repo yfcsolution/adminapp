@@ -57,67 +57,119 @@ const DuplicateLeads = ({ leadId }) => {
   }
 
   return (
-    <div className="flex justify-center min-h-screen bg-gray-100 p-4 sm:p-10">
-      <div className="w-full max-w-5xl bg-white shadow-xl rounded-2xl border border-gray-200 p-6 sm:p-10">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-10">
+      <div className="w-full max-w-5xl mx-auto">
         {leadsData.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
             {leadsData.map((lead, index) => (
               <div
                 key={index}
-                className="   shadow-md rounded-lg p-6 border border-teal-200 hover:shadow-lg transition-shadow duration-300"
+                className="bg-white  overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
-                <h3 className="text-xl font-semibold text-teal-900 mb-3">
-                  {lead.FULL_NAME}
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Email:</span> {lead.EMAIL}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Phone:</span> {lead.PHONE_NO}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Country:</span> {lead.COUNTRY}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">State:</span> {lead.STATE}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Time Zone:</span>{" "}
-                    {lead.TIME_ZONE}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Currency:</span>{" "}
-                    {lead.CURRENCY}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Lead IP:</span> {lead.LEAD_IP}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">WhatsApp Status:</span>{" "}
-                    {lead.WHATSAPP_STATUS}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Synced to Oracle:</span>{" "}
-                    {lead.syncedToOracle ? "Yes" : "No"}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Created At:</span>{" "}
-                    {new Date(lead.createdAt).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Updated At:</span>{" "}
-                    {new Date(lead.updatedAt).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-teal-800">
-                    <span className="font-medium">Remarks:</span> {lead.REMARKS}
-                  </p>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-teal-700 mb-4">
+                    {lead.FULL_NAME}
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Email:
+                      </span>
+                      <span className="text-sm text-gray-700">{lead.EMAIL}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Phone:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.PHONE_NO}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Country:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.COUNTRY}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        State:
+                      </span>
+                      <span className="text-sm text-gray-700">{lead.STATE}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Time Zone:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.TIME_ZONE}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Currency:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.CURRENCY}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Lead IP:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.LEAD_IP}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        WhatsApp:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.WHATSAPP_STATUS}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Synced:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.syncedToOracle ? "Yes" : "No"}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Created At:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {new Date(lead.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Updated At:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {new Date(lead.updatedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-gray-500 w-24">
+                        Remarks:
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {lead.REMARKS}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-center text-teal-800">No duplicate leads found.</p>
+          <p className="text-center text-gray-600">No duplicate leads found.</p>
         )}
       </div>
     </div>

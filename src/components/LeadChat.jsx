@@ -178,14 +178,14 @@ const LeadChat = ({ leadId }) => {
   }, [messages]);
 
   return (
-    <div className="flex w-full justify-center min-h-screen md:px-4 bg-gray-100">
-      <div className="w-full max-w-3xl bg-white rounded-lg shadow-lg flex flex-col">
+    <div className="flex w-full justify-center min-h-screen bg-gray-100 p-4">
+      <div className="w-full max-w-4xl bg-white flex flex-col">
         {/* Chat Header */}
-        <div className="bg-teal-600 text-white px-6 py-4 rounded-t-lg">
-          <h2 className="text-2xl font-semibold">Chat</h2>
-          <p className="text-sm opacity-90">User - Online</p>
+        <div className=" text-white px-6 py-4 rounded-t-lg">
+          <h2 className="text-2xl font-semibold text-black">Chat</h2>
+          <p className="text-sm opacity-90 text-green-500">User - Online</p>
           <button
-            className="mt-2 px-4 py-2 bg-white text-teal-600 font-semibold text-sm rounded-lg hover:bg-gray-100 focus:ring-2 focus:ring-teal-600"
+            className="mt-2 px-4 py-2 bg-white text-teal-600 font-semibold text-sm border rounded-lg hover:bg-gray-100 focus:ring-2 focus:ring-teal-600"
             onClick={sendWelcomeMessage}
           >
             Send Welcome Message
@@ -249,11 +249,11 @@ const LeadChat = ({ leadId }) => {
         </div>
 
         {/* Chat Input */}
-        <div className="flex items-center bg-white px-4 py-4 border-t rounded-b-lg">
+        <div className="flex flex-col sm:flex-row items-center bg-white px-4 py-4 border-t rounded-b-lg gap-2">
           <select
             value={appKey}
             onChange={(e) => setAppKey(e.target.value)}
-            className="px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-sm w-1/4"
+            className="px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-sm w-full sm:w-1/4"
           >
             <option value="044d31bc-1666-4f72-8cc2-32be88c8a6d7">
               US AppKey
@@ -271,12 +271,12 @@ const LeadChat = ({ leadId }) => {
           <input
             type="text"
             placeholder="Type your message..."
-            className="flex-1 px-4 py-3 ml-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-sm"
+            className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-sm w-full"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
           />
           <button
-            className="ml-4 px-6 py-3 bg-teal-600 text-white font-semibold text-sm rounded-lg hover:bg-teal-700 focus:ring-2 focus:ring-teal-600"
+            className="w-full sm:w-auto px-6 py-3 bg-teal-600 text-white font-semibold text-sm rounded-lg hover:bg-teal-700 focus:ring-2 focus:ring-teal-600"
             onClick={sendMessage}
           >
             Send

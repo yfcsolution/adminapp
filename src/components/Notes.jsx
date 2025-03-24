@@ -13,16 +13,17 @@ const Notes = ({ leadId }) => {
     description: "",
     dateContacted: "",
     addedFrom: "",
-    leadStatus: "", // Add leadStatus to formData
+    leadStatus: "",
   });
 
   const [roleId, setRoleId] = useState(null);
 
-  // Function to fetch notes
+  // Fetch notes
   const fetchNotes = async () => {
-    if (!leadId) return; // Ensure leadId exists before making the request
+    if (!leadId) return;
 
     setError(null);
+    setLoading(true);
 
     try {
       const response = await fetch("/api/notes/get", {
@@ -38,8 +39,6 @@ const Notes = ({ leadId }) => {
       }
 
       const result = await response.json();
-      console.log("Response JSON:", result); // Debugging response structure
-
       if (result && result.data && Array.isArray(result.data)) {
         setData(result.data);
       } else {
@@ -62,8 +61,6 @@ const Notes = ({ leadId }) => {
       const response = await axios.get("/api/admin-info", {
         withCredentials: true,
       });
-      console.log("reponse is ", response);
-
       setRoleId(response.data.data.role_id);
     };
     getAdminData();
@@ -81,7 +78,7 @@ const Notes = ({ leadId }) => {
     fetchLeadsStatus();
   }, []);
 
-  // Function to format date
+  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -91,7 +88,7 @@ const Notes = ({ leadId }) => {
         month: "short",
         year: "numeric",
       })
-      .toUpperCase(); // Converts "19 Feb 2025" to "19 FEB 2025"
+      .toUpperCase();
   };
 
   // Handle form input changes
@@ -118,17 +115,15 @@ const Notes = ({ leadId }) => {
           P_ADDEDFROM: roleId,
         }),
       });
-      toast.success("Note added successfully");
-      // Refetch notes to update the list
-      fetchNotes();
-      // Check if note addition was successful
+
       if (!noteResponse.ok) {
         throw new Error("Failed to add Note");
       }
 
-      // Show success toast for note addition
+      toast.success("Note added successfully");
+      fetchNotes();
 
-      // If Lead Status is selected, update the lead status
+      // Update lead status if selected
       if (formData.leadStatus) {
         const statusResponse = await fetch("/api/leads/update-status", {
           method: "POST",
@@ -141,15 +136,12 @@ const Notes = ({ leadId }) => {
           }),
         });
 
-        // Check if status update was successful
         if (!statusResponse.ok) {
           throw new Error("Failed to update lead status");
         }
-
-        console.log("Status response is", statusResponse);
       }
 
-      // Reset form and hide it
+      // Reset form
       setFormData({
         description: "",
         dateContacted: "",
@@ -164,7 +156,7 @@ const Notes = ({ leadId }) => {
   };
 
   return (
-    <div className="p-6 border border-teal-300 rounded-lg bg-white shadow-md">
+    <div className="p-6  bg-white">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-teal-700">Notes</h2>
         <button
@@ -240,40 +232,82 @@ const Notes = ({ leadId }) => {
       ) : error ? (
         <p className="text-sm text-red-500">{error}</p>
       ) : data.length > 0 ? (
-        <div className="overflow-x-auto">
-          <p className="text-sm text-gray-500 mt-4">Lead ID: {leadId}</p>
-          <table className="w-full border border-teal-300 rounded-md">
-            <thead>
-              <tr className="bg-teal-600 text-white">
-                <th className="px-4 py-2">Description</th>
-                <th className="px-4 py-2">Date Contacted</th>
-                <th className="px-4 py-2">Added From</th>
-                <th className="px-4 py-2">Date Added</th>
-                <th className="px-4 py-2">SYNCED</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item, index) => (
-                <tr
-                  key={index}
-                  className={index % 2 === 0 ? "bg-teal-50" : "bg-white"}
-                >
-                  <td className="px-4 py-2 border">{item.P_DESCRIPTION}</td>
-                  <td className="px-4 py-2 border">
-                    {formatDate(item.P_DATE_CONTACTED)}
-                  </td>
-                  <td className="px-4 py-2 border">{item.P_ADDEDFROM}</td>
-                  <td className="px-4 py-2 border">
-                    {formatDate(item.P_DATEADDED)}
-                  </td>
-                  <td className="px-4 py-2 border">
-                    {item.SYNCED ? "✔️" : "❌"}
-                  </td>
+        <>
+          {/* Table for larger screens */}
+          <div className="hidden md:block overflow-x-auto">
+            <p className="text-sm text-gray-500 mt-4">Lead ID: {leadId}</p>
+            <table className="w-full border border-teal-300 rounded-md">
+              <thead>
+                <tr className="bg-teal-600 text-white">
+                  <th className="px-4 py-2">Description</th>
+                  <th className="px-4 py-2">Date Contacted</th>
+                  <th className="px-4 py-2">Added From</th>
+                  <th className="px-4 py-2">Date Added</th>
+                  <th className="px-4 py-2">SYNCED</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.map((item, index) => (
+                  <tr
+                    key={index}
+                    className={index % 2 === 0 ? "bg-teal-50" : "bg-white"}
+                  >
+                    <td className="px-4 py-2 border">{item.P_DESCRIPTION}</td>
+                    <td className="px-4 py-2 border">
+                      {formatDate(item.P_DATE_CONTACTED)}
+                    </td>
+                    <td className="px-4 py-2 border">{item.P_ADDEDFROM}</td>
+                    <td className="px-4 py-2 border">
+                      {formatDate(item.P_DATEADDED)}
+                    </td>
+                    <td className="px-4 py-2 border">
+                      {item.SYNCED ? "✔️" : "❌"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Cards for mobile screens */}
+          <div className="md:hidden space-y-4">
+            {data.map((item, index) => (
+              <div
+                key={index}
+                className="p-4 border"
+              >
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-teal-700">
+                    Description:{" "}
+                    <span className="font-normal">{item.P_DESCRIPTION}</span>
+                  </p>
+                  <p className="text-sm font-medium text-teal-700">
+                    Date Contacted:{" "}
+                    <span className="font-normal">
+                      {formatDate(item.P_DATE_CONTACTED)}
+                    </span>
+                  </p>
+                  <p className="text-sm font-medium text-teal-700">
+                    Added From:{" "}
+                    <span className="font-normal">{item.P_ADDEDFROM}</span>
+                  </p>
+                  <p className="text-sm font-medium text-teal-700">
+                    Date Added:{" "}
+                    <span className="font-normal">
+                      {formatDate(item.P_DATEADDED)}
+                    </span>
+                  </p>
+                  <p className="text-sm font-medium text-teal-700">
+                    SYNCED:{" "}
+                    <span className="font-normal">
+                      {item.SYNCED ? "✔️" : "❌"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       ) : (
         <p className="text-sm text-gray-500">No notes available.</p>
       )}

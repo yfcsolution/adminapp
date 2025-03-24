@@ -74,21 +74,21 @@ const LeadsStudents = ({ leadId }) => {
 
   return (
     <div className="flex justify-center min-h-screen bg-gray-100 p-4 sm:p-10">
-      <div className="w-full max-w-5xl bg-white shadow-xl rounded-2xl border border-gray-200 p-6 sm:p-10">
+      <div className="w-full max-w-5xl bg-white  p-4 sm:p-6 lg:p-10">
         {leadsData.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {leadsData.map((lead, index) => (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 p-6"
+                className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 p-4 sm:p-6"
               >
                 {/* Student Name */}
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">
                   {lead.STUDENT_NAME || "N/A"}
                 </h3>
 
                 {/* Gender */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Gender
                   </p>
@@ -98,7 +98,7 @@ const LeadsStudents = ({ leadId }) => {
                 </div>
 
                 {/* Age */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Age
                   </p>
@@ -108,7 +108,7 @@ const LeadsStudents = ({ leadId }) => {
                 </div>
 
                 {/* Contact Time */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Contact Time
                   </p>
@@ -118,7 +118,7 @@ const LeadsStudents = ({ leadId }) => {
                 </div>
 
                 {/* Contact Method */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Contact Method
                   </p>
@@ -128,7 +128,7 @@ const LeadsStudents = ({ leadId }) => {
                 </div>
 
                 {/* Class Timing */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Class Timing (Minutes)
                   </p>
@@ -138,7 +138,7 @@ const LeadsStudents = ({ leadId }) => {
                 </div>
 
                 {/* Special Requirements */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Special Requirements
                   </p>
@@ -148,7 +148,7 @@ const LeadsStudents = ({ leadId }) => {
                 </div>
 
                 {/* Preferred Courses */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <p className="text-xs text-gray-500 uppercase font-semibold">
                     Preferred Courses
                   </p>
