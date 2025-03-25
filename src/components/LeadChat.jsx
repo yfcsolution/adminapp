@@ -17,7 +17,6 @@ const LeadChat = ({ leadId }) => {
           const response = await axios.post("/api/messages/whatsapp/chat", {
             leadId,
           });
-          console.log("reponse i acheievd is", response);
 
           const conversationMessages =
             response.data.data?.flatMap((msg) => msg.conversation) || [];

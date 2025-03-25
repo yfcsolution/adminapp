@@ -317,6 +317,7 @@ export const handleMessageSending = async (req) => {
       { WHATSAPP_STATUS: error.message }
     );
   }
+  const trackingId = Math.random().toString(36).substring(7); // Unique ID
 
   // Email Notifications
   const MailOptions = {
@@ -376,6 +377,8 @@ export const handleMessageSending = async (req) => {
             <strong>IlmulQuran.com Team</strong><br>
             <a href="mailto:admin@ilmulquran.com">admin@ilmulquran.com</a>
             </p>
+            <img src="https://imul-quaran-testing.vercel.app/api/email-track?trackingId=${trackingId}" width="10" height="10" />
+
         </body>
         </html>`,
   };
@@ -716,6 +719,42 @@ export const fetchSingleLeadProfileData = async (req) => {
     // Mask sensitive fields before sending response
     lead.EMAIL = "***************";
     lead.PHONE_NO = "***************";
+    // Return the fetched lead data
+    return NextResponse.json(
+      {
+        message: "Leads fetched successfully",
+        data: lead,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error fetching lead:", error);
+    return NextResponse.json(
+      { message: "Error fetching leads. Please try again later." },
+      { status: 500 }
+    );
+  }
+};
+// fetch single leadsdata
+export const fetchSearchLeadProfileData = async (req) => {
+  try {
+    const { id, leadId } = await req.json();
+
+    // Try to find the lead by LEAD_ID first
+    let lead = await LeadsForm.findOne({ LEAD_ID: leadId }).lean();
+    if (lead?.P_STATUS) {
+      const status = await LeadsStatus.findOne({ ID: lead.P_STATUS }).lean();
+      lead.P_STATUS = status.NAME || "N/A"; // If no status found, return null
+    }
+    // If not found, then try to find by _id
+    if (!lead) {
+      lead = await LeadsForm.findById(id);
+    }
+
+    // If no lead is found by either method, return an error
+    if (!lead) {
+      return NextResponse.json({ message: "No lead found" }, { status: 404 });
+    }
     // Return the fetched lead data
     return NextResponse.json(
       {

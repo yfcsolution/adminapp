@@ -22,41 +22,34 @@ export async function POST() {
         pass: "vash ribg ihua wyqo", // App password
       },
     });
-
-    // Mail Options
     const trackingId = Math.random().toString(36).substring(7); // Unique ID
+    // Mail Options
     const mailOptions = {
-      from: "admin@ilmulquran.com",
-      to: "dafiyahilmulquran@gmail.com",
-      replyTo: "ijazwakeel.dev@gmail.com",
+      from: "dafiyahilmulquran@gmail.com",
+      to: "ijazwakeel.dev@gmail.com",
       subject: "Test Form Submission",
       html: `
-        <h1>Test Form Submission</h1>
-        <p><strong>Full Name:</strong> ${FULL_NAME}</p>
-        <p><strong>Email:</strong> ${EMAIL}</p>
-        <p><strong>Phone Number:</strong> ${PHONE_NO}</p>
-        <p><strong>Country:</strong> ${COUNTRY}</p>
-        <p><strong>State:</strong> ${STATE}</p>
-        <p><strong>Time Zone:</strong> ${TIME_ZONE}</p>
-        <p><strong>Currency:</strong> ${CURRENCY}</p>
-        <p><strong>Remarks:</strong> ${REMARKS}</p>
-        <p><strong>IP Address:</strong> ${LEAD_IP}</p>
-        <p><strong>Request Form:</strong> ${REQUEST_FORM}</p>
-      `,
+          <h1>Test Form Submission</h1>
+          <!-- Hidden Tracking Pixel -->
+<img src="https://imul-quaran-testing.vercel.app/api/emails/track?trackingId=${trackingId}" width="10" height="10" />
+        `,
     };
-
     // Send email
     const response = await transporter.sendMail(mailOptions);
-    console.log("response is", response);
+
+    console.log("Full response:", response);
 
     return Response.json(
-      { message: "Test email sent successfully!" },
+      {
+        message: "Test email sent successfully!",
+        response, // Returning full response
+      },
       { status: 200 }
     );
   } catch (error) {
     console.error("Email sending failed:", error);
     return Response.json(
-      { error: "Failed to send test email" },
+      { error: "Failed to send test email", details: error.message },
       { status: 500 }
     );
   }

@@ -15,7 +15,6 @@ export default function Navbar({ toggleSidebar }) {
       const response = await axios.get("/api/admin-info", {
         withCredentials: true,
       });
-      console.log("admin info is", response);
       setAdminName(response.data.data.firstname);
     };
     getAdminData();

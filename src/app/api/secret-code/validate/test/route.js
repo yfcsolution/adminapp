@@ -1,9 +1,10 @@
 // app/api/validate-secret-code/route.js
-import { NextResponse } from "next/server";
-import dbConnect from "../../../../config/db";
-import bcrypt from "bcrypt";
-import { verifyJWT } from "@/middleware/auth_middleware";
-import User from "@/models/User";
+
+import { NextResponse } from "next/server"; // Import NextResponse
+import dbConnect from "../../../../config/db"; // Import dbConnect
+import bcrypt from "bcrypt"; // Import bcrypt for hashing
+import { verifyJWT } from "@/middleware/auth_middleware"; // Import verifyJWT middleware
+import User from "@/models/User"; // Import User model
 
 export async function POST(req) {
   const authResult = await verifyJWT(req);
@@ -12,10 +13,14 @@ export async function POST(req) {
   if (authResult instanceof NextResponse && authResult.status === 401) {
     return authResult;
   }
+
   try {
-    await dbConnect();
+    await dbConnect(); // Connect to MongoDB
+
+    // Parse the request body to get the secret code
     const { secretCode } = await req.json();
 
+    // Validate if the secret code is provided
     if (!secretCode) {
       return NextResponse.json(
         { error: "Secret code is required" },
@@ -23,12 +28,14 @@ export async function POST(req) {
       );
     }
 
+    // Find the user in the database using the user ID from JWT payload (req.user)
     const user = await User.findById(req.user._id);
 
     if (!user) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
+    // Get the stored hashed secret code from the user document
     const storedCode = user.secreteCode;
 
     if (!storedCode) {
@@ -38,16 +45,11 @@ export async function POST(req) {
       );
     }
 
+    // Compare the entered secret code with the stored hashed secret code
     const isMatch = await bcrypt.compare(secretCode, storedCode);
 
     if (isMatch) {
-      return NextResponse.json(
-        {
-          success: true,
-          userId: user._id.toString(), // Add user ID to response
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({ success: true }, { status: 200 });
     } else {
       return NextResponse.json(
         { error: "Invalid secret code" },
