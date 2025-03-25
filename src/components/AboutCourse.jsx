@@ -7,7 +7,6 @@ const AboutCourse = () => {
         <div className="text-left  text-black font-bold text-lg md:text-2xl lg:text-3xl">
           About Courses & Classes
         </div>
-
         <div className="text-left text-black font-normal text-base mt-2">
           The techniques, strategies, and processes we offer in tutoring these
           courses for Quran Classes Online with Tajweed help the students to
