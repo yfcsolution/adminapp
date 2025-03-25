@@ -32,7 +32,6 @@ export const handleLeadsSubmit = async (req) => {
       DEVICE = 1; // For "+92", set device value to 1
     }
   }
-  console.log("DEvice is", DEVICE);
 
   try {
     // Check for existing lead by EMAIL or PHONE_NO
@@ -935,27 +934,6 @@ export const handleoracleleads = async (req) => {
     SPECIAL_REQUIREMENTS,
   } = await req.json();
 
-  console.log(
-    FULL_NAME,
-    EMAIL,
-    PHONE_NO,
-    REMARKS,
-    COUNTRY,
-    STATE,
-    TIME_ZONE,
-    CURRENCY,
-    LEAD_IP,
-    REQUEST_FORM,
-    CONTACT_TIME,
-    CONTACT_METHOD,
-    STUDENT_NAME,
-    STUDENT_GENDER,
-    STUDENT_AGE,
-    PREFERRED_COURSES,
-    CLASS_TIMING,
-    SPECIAL_REQUIREMENTS
-  );
-
   // Check for empty fields
   if ([EMAIL, PHONE_NO].some((field) => !field)) {
     return NextResponse.json(
@@ -1072,20 +1050,6 @@ export const handleWebhookLeads = async (req) => {
       REQUEST_FORM,
       conversationId,
     } = await req.json();
-
-    console.log("Received data:", {
-      FULL_NAME,
-      EMAIL,
-      PHONE_NO,
-      REMARKS,
-      COUNTRY,
-      TIME_ZONE,
-      CURRENCY,
-      STATE,
-      LEAD_IP,
-      REQUEST_FORM,
-      conversationId,
-    });
 
     // Create new form submission
     const newFormData = await LeadsForm.create({
@@ -1380,14 +1344,11 @@ export const searchRoleBasedLeads = async (req) => {
     let maskedLeads;
 
     if (role_id === 12 || role_id === 13) {
-      console.log("search query is", searchQuery);
-
       // Fetch leads with pagination for admin roles
       leads = await LeadsForm.find(searchQuery)
         .sort({ updatedAt: -1, _id: -1 })
         .skip(Number(skip))
         .limit(Number(pageSize));
-      console.log("leads are", leads);
 
       if (!leads || leads.length === 0) {
         return NextResponse.json({ data: [], total: 0 }, { status: 200 });
