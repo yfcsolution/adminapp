@@ -7,7 +7,6 @@ export async function POST(request) {
   try {
     // Connect to the database
     await connectDB();
-
     // Parse the incoming JSON request body
     const { Lead_Id } = await request.json(); // Await the json() parsing
 
