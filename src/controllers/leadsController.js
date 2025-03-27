@@ -1186,9 +1186,8 @@ export const groupLeads = async () => {
 
 export const fetchRoleBasedLeads = async (req) => {
   try {
-    const { page, pageSize, secreteCode } = await req.json();
+    const { page, pageSize, secreteCode, sortField } = await req.json();
     // Check if the user is authenticated
-    // NOTE: You need to implement proper authentication middleware to populate `req.user`
     if (!req.user) {
       return NextResponse.json(
         { message: "User not authenticated" },
@@ -1205,18 +1204,29 @@ export const fetchRoleBasedLeads = async (req) => {
     const role_id = user.role_id;
 
     const skip = (page - 1) * pageSize;
+
+    // Default sort by createdAt (newest first)
+    let sortOptions = {
+      updatedAt: -1,
+      _id: -1,
+    };
+
+    // If sortField is provided and valid, use it for sorting (still newest first)
+    if (sortField && typeof sortField === "string") {
+      sortOptions = {
+        [sortField]: -1, // Always sort by newest first for any field
+        _id: -1,
+      };
+    }
+
     if (role_id == 12 || role_id == 13) {
       // Fetch leads with pagination
       const leads = await LeadsForm.find()
-        .sort({
-          updatedAt: -1,
-          _id: -1,
-        }) // Sort by updated_at first, then by _id
+        .sort(sortOptions)
         .skip(skip)
         .limit(pageSize);
 
       if (!leads || leads.length === 0) {
-        // Return empty data and total leads count if no leads found
         return NextResponse.json({ data: [], total: 0 }, { status: 200 });
       }
       let maskedLeads;
@@ -1226,7 +1236,6 @@ export const fetchRoleBasedLeads = async (req) => {
           VISIBLE: true,
         }));
       } else {
-        // Mask the EMAIL and PHONE_NO fields
         maskedLeads = leads.map((lead) => ({
           ...lead.toObject(),
           EMAIL: "***********",
@@ -1235,10 +1244,8 @@ export const fetchRoleBasedLeads = async (req) => {
         }));
       }
 
-      // Get the total count of leads to calculate total pages
       const totalLeads = await LeadsForm.countDocuments();
 
-      // Return the masked leads and total count
       return NextResponse.json(
         { data: maskedLeads, total: totalLeads },
         { status: 200 }
@@ -1246,33 +1253,27 @@ export const fetchRoleBasedLeads = async (req) => {
     } else {
       const staffid = user.staffid;
 
-      // Fetch leads with pagination
       const leads = await LeadsForm.find({
         P_ASSIGNED: staffid,
       })
-        .sort({
-          updatedAt: -1,
-          _id: -1,
-        }) // Sort by updated_at first, then by _id
+        .sort(sortOptions)
         .skip(skip)
         .limit(pageSize);
 
       if (!leads || leads.length === 0) {
-        // Return empty data and total leads count if no leads found
         return NextResponse.json({ data: [], total: 0 }, { status: 200 });
       }
 
-      // Mask the EMAIL and PHONE_NO fields
       const maskedLeads = leads.map((lead) => ({
         ...lead.toObject(),
         EMAIL: "***********",
         PHONE_NO: "***********",
       }));
 
-      // Get the total count of leads to calculate total pages
-      const totalLeads = await LeadsForm.countDocuments();
+      const totalLeads = await LeadsForm.countDocuments({
+        P_ASSIGNED: staffid,
+      });
 
-      // Return the masked leads and total count
       return NextResponse.json(
         { data: maskedLeads, total: totalLeads },
         { status: 200 }

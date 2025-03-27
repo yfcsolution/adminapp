@@ -29,12 +29,14 @@ const LeadsData = () => {
     REMARKS: "",
     REQUEST_FORM: "",
   });
+  const [sortField, setSortField] = useState("updatedAt"); // Default sort by createdAt
 
   const fetchLeadsData = async () => {
     try {
       const response = await axios.post(`/api/leads/data`, {
         page,
         pageSize,
+        sortField, // Add this line
       });
       setLeadsData(response.data.data);
       setTotalLeads(response.data.total);
@@ -136,7 +138,7 @@ const LeadsData = () => {
 
   useEffect(() => {
     fetchLeadsData();
-  }, [page, pageSize]);
+  }, [page, pageSize, sortField]); // Add sortField here
 
   const totalPages = Math.ceil(totalLeads / pageSize);
 
@@ -180,6 +182,21 @@ const LeadsData = () => {
             >
               Add Lead
             </button>
+            <div className="ml-4">
+              <label className="mr-2 font-semibold">Sort By:</label>
+              <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value)}
+                className="border border-teal-500 rounded-lg p-2"
+              >
+                <option value="createdAt">Date Created</option>
+                <option value="LEAD_ID">Lead ID</option>
+                <option value="FULL_NAME">Name</option>
+                <option value="STATE">State</option>
+                <option value="COUNTRY">Country</option>
+                <option value="REQUEST_FORM">Request Form</option>
+              </select>
+            </div>
           </div>
 
           {showAddLeadForm && (
