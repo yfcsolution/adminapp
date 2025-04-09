@@ -4,18 +4,23 @@ import { useEffect, useState } from "react";
 import { FaBars, FaUserCircle } from "react-icons/fa";
 import { useAuth } from "../common/auth-context";
 import axios from "axios";
-
+import { useRouter } from "next/navigation";
 export default function Navbar({ toggleSidebar }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { handleLogout, getAdminData } = useAuth();
   const [adminName, setAdminName] = useState("");
-
+  const router = useRouter();
   useEffect(() => {
     const getAdminData = async () => {
       const response = await axios.get("/api/admin-info", {
         withCredentials: true,
       });
-      setAdminName(response.data.data.firstname);
+
+      if (response.status == 200) {
+        setAdminName(response.data.data.firstname);
+      } else {
+        router.push("/admin/login");
+      }
     };
     getAdminData();
   }, []);

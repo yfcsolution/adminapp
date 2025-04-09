@@ -164,6 +164,8 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.get("/api/admin-info", {
       withCredentials: true,
     });
+    console.log("admin response is", response);
+
     return response;
   };
 
