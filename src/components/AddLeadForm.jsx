@@ -224,6 +224,7 @@ const AddLeadForm = ({ setShowAddLeadForm, fetchLeadsData }) => {
                   value={newLead.REQUEST_FORM}
                   onChange={handleInputChange}
                   className="w-full border border-teal-500 rounded-lg p-2"
+                  required
                 >
                   <option value="">Select Source</option>
                   {sources.map((source) => (
