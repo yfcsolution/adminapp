@@ -1,254 +1,344 @@
-"use client"; // To indicate client-side code for Next.js
+"use client";
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../../admin_dashboard_layout/layout";
-import { useRouter } from "next/navigation"; // Import useRouter correctly
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
-export default function Search() {
-  const [query, setQuery] = useState("");
-  const [field, setField] = useState("email"); // Default field is email
-  const [results, setResults] = useState([]); // Ensure it’s initialized as an array
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [secretCode, setSecretCode] = useState(""); // State for secret code
-  const [isAuthorized, setIsAuthorized] = useState(false); // Authorization state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const router = useRouter(); // Place the router hook at the top
+const Search = () => {
+  // State management
+  const [searchParams, setSearchParams] = useState({
+    query: "",
+    field: "email",
+    page: 1,
+    limit: 10,
+  });
+  const [results, setResults] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+  });
+  const [loading, setLoading] = useState({
+    search: false,
+    auth: false,
+    default: false,
+  });
+  const [auth, setAuth] = useState({
+    code: "",
+    isAuthorized: false,
+    error: "",
+  });
 
-  // Fetch all students by default when authorized
+  const router = useRouter();
+
+  // Constants
+  const SEARCH_FIELDS = [
+    { value: "id", label: "ID" },
+    { value: "userid", label: "User ID" },
+    { value: "firstname", label: "First Name" },
+    { value: "lastname", label: "Last Name" },
+    { value: "email", label: "Email" },
+    { value: "phonenumber", label: "Phone Number" },
+  ];
+
+  // Data fetching
   useEffect(() => {
-    if (isAuthorized) {
-      fetchAllStudents();
+    if (auth.isAuthorized) {
+      fetchStudents();
     }
-  }, [isAuthorized, currentPage]);
+  }, [auth.isAuthorized, searchParams.page]);
 
-  // Function to fetch all students
-  const fetchAllStudents = async () => {
-    setLoading(true);
-    setError("");
+  const fetchStudents = async (searchQuery = null) => {
+    setLoading((prev) => ({ ...prev, default: true }));
+
     try {
-      const res = await fetch(
-        `/api/fetch-stds-info/search/default?page=${currentPage}&limit=10`
-      );
+      const url = searchQuery
+        ? `/api/fetch-stds-info/search?query=${searchQuery}&field=${searchParams.field}`
+        : `/api/fetch-stds-info/search/default?page=${searchParams.page}&limit=${searchParams.limit}`;
+
+      const res = await fetch(url);
       const data = await res.json();
 
-      if (res.ok) {
-        setResults(data.students || []);
-        setTotalPages(data.pagination.totalPages || 1);
-      } else {
-        setError(data.message || "No students found");
+      if (!res.ok) throw new Error(data.message || "Failed to fetch students");
+
+      setResults(data.students || []);
+      if (data.pagination) {
+        setPagination({
+          currentPage: data.pagination.currentPage,
+          totalPages: data.pagination.totalPages,
+          totalItems: data.pagination.totalItems,
+        });
       }
-    } catch (err) {
-      setError("Error fetching student data");
+    } catch (error) {
+      toast.error(error.message);
     } finally {
-      setLoading(false);
+      setLoading((prev) => ({ ...prev, default: false }));
     }
   };
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
 
-  // Handle the search query and trigger the backend API
+  // Handlers
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!searchParams.query.trim()) return;
 
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(
-        `/api/fetch-stds-info/search?query=${query}&field=${field}`
-      );
-      const data = await res.json();
-
-      if (res.ok) {
-        setResults(data.students || []); // Ensure it’s always an array
-      } else {
-        setError(data.message || "No students found");
-      }
-    } catch (err) {
-      setError("Error searching the database");
-    } finally {
-      setLoading(false);
-    }
+    setLoading((prev) => ({ ...prev, search: true }));
+    await fetchStudents(searchParams.query);
+    setLoading((prev) => ({ ...prev, search: false }));
   };
 
-  const handleForgotCode = () => {
-    router.push("/admin/settings/secret-code/forgot"); // Correctly use the router here
-  };
-
-  // Handle the secret code validation
-  const handleSecretCodeSubmit = async (e) => {
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    if (!secretCode) {
-      setError("Please enter a secret code.");
+    if (!auth.code) {
+      setAuth((prev) => ({ ...prev, error: "Please enter a secret code" }));
       return;
     }
+
+    setLoading((prev) => ({ ...prev, auth: true }));
 
     try {
       const res = await fetch("/api/secret-code/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secretCode }),
+        body: JSON.stringify({ secretCode: auth.code }),
       });
       const data = await res.json();
 
-      if (res.ok) {
-        setIsAuthorized(true); // Unlock the data
-      } else {
-        setError(data.error || "Invalid secret code");
-      }
+      if (!res.ok) throw new Error(data.error || "Invalid secret code");
+
+      setAuth((prev) => ({ ...prev, isAuthorized: true, error: "" }));
     } catch (error) {
-      setError("Error validating secret code.");
+      setAuth((prev) => ({ ...prev, error: error.message }));
+    } finally {
+      setLoading((prev) => ({ ...prev, auth: false }));
     }
   };
 
-  // Render the content only when client-side is ready and authorized
-  if (!isAuthorized) {
-    return (
-      <DashboardLayout>
-        <div className="container mx-auto p-6">
-          <h2 className="text-2xl font-bold text-teal-800 mb-6 text-center">
-            Enter Secret Code
-          </h2>
-          <form onSubmit={handleSecretCodeSubmit} className="text-center">
-            <input
-              type="password"
-              value={secretCode}
-              onChange={(e) => setSecretCode(e.target.value)}
-              placeholder="Please Enter Secret Code"
-              className="px-4 py-2 border rounded-md border-gray-300 focus:ring-teal-500 focus:ring-2 focus:outline-none mb-4"
-            />
-            <button
-              type="submit"
-              className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 mb-4"
-            >
-              Submit Code
-            </button>
-          </form>
+  const handleActionSelect = (action, student) => {
+    if (action === "payment") {
+      router.push(
+        `/admin/student-payment?_id=${student._id}&userid=${student.userid}`
+      );
+    } else if (action === "invoice") {
+      const invoiceLink = `https://sp.ilmulquran.com/student/invoice/${student.userid}/${student._id}`;
+      navigator.clipboard
+        .writeText(invoiceLink)
+        .then(() => toast.success("Invoice link copied!"))
+        .catch(() => toast.error("Failed to copy link"));
+    }
+  };
 
-          {error && <p className="text-red-600 text-center">{error}</p>}
+  const handlePageChange = (page) => {
+    setSearchParams((prev) => ({ ...prev, page }));
+  };
 
-          {/* Forgot Secret Code Button */}
-          <div className="text-center mt-4">
-            <button
-              onClick={handleForgotCode}
-              className="text-teal-600 hover:underline focus:outline-none"
-            >
-              Forgot Secret Code?
-            </button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Render the search form and results only if authorized
-  return (
+  // Render functions
+  const renderAuthForm = () => (
     <DashboardLayout>
-      <div className="container mx-auto p-6">
+      <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-teal-800 mb-6 text-center">
-          Search Students
+          Admin Authorization
         </h2>
 
-        {/* Search Form */}
-        <form
-          onSubmit={handleSearch}
-          className="flex items-center justify-center gap-4 mb-6"
-        >
-          <input
-            type="text"
-            id="query"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter student ID, firstname, email, etc."
-            className="px-4 py-2 border rounded-md border-gray-300 focus:ring-teal-500 focus:ring-2 focus:outline-none w-1/3"
-          />
-          <select
-            id="field"
-            value={field}
-            onChange={(e) => setField(e.target.value)}
-            className="px-4 py-2 border rounded-md border-gray-300 focus:ring-teal-500 focus:ring-2 focus:outline-none"
-          >
-            <option value="id">ID</option>
-            <option value="userid">User ID</option>
-            <option value="firstname">First Name</option>
-            <option value="lastname">Last Name</option>
-            <option value="email">Email</option>
-            <option value="phonenumber">Phone Number</option>
-          </select>
+        <form onSubmit={handleAuthSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="secretCode"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Secret Code
+            </label>
+            <input
+              type="password"
+              id="secretCode"
+              value={auth.code}
+              onChange={(e) =>
+                setAuth((prev) => ({ ...prev, code: e.target.value }))
+              }
+              className="w-full px-4 py-2 border rounded-md focus:ring-teal-500 focus:border-teal-500"
+              placeholder="Enter your secret code"
+            />
+          </div>
+
+          {auth.error && <p className="text-red-600 text-sm">{auth.error}</p>}
+
           <button
             type="submit"
-            disabled={loading}
-            className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-300"
+            disabled={loading.auth}
+            className="w-full py-2 px-4 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-300 transition-colors"
           >
-            {loading ? "Searching..." : "Search"}
+            {loading.auth ? "Verifying..." : "Authorize"}
           </button>
-        </form>
 
-        {error && <p className="text-red-600 text-center">{error}</p>}
-
-        <div className="mt-6">
-          <h3 className="text-xl font-semibold text-teal-800 mb-4">
-            Search Results
-          </h3>
-
-          {/* Table to show results */}
-          <table className="min-w-full bg-white border border-teal-600 rounded-md shadow-md">
-            <thead>
-              <tr className="bg-teal-600 text-white">
-                <th className="py-3 px-4 text-left">ID</th>
-                <th className="py-3 px-4 text-left">User ID</th>
-                <th className="py-3 px-4 text-left">First Name</th>
-                <th className="py-3 px-4 text-left">Last Name</th>
-                <th className="py-3 px-4 text-left">Email</th>
-                <th className="py-3 px-4 text-left">Phone Number</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Map over the search results */}
-              {results.length > 0 ? (
-                results.map((student) => (
-                  <tr key={student.id} className="hover:bg-teal-50">
-                    <td className="py-3 px-4">{student.id}</td>
-                    <td className="py-3 px-4">{student.userid}</td>
-                    <td className="py-3 px-4">{student.firstname}</td>
-                    <td className="py-3 px-4">{student.lastname}</td>
-                    <td className="py-3 px-4">{student.email}</td>
-                    <td className="py-3 px-4">{student.phonenumber}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center py-3 text-teal-600">
-                    No results found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="flex justify-center mt-4">
+          <div className="text-center">
             <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-300"
+              type="button"
+              onClick={() => router.push("/admin/settings/secret-code/forgot")}
+              className="text-teal-600 hover:text-teal-800 text-sm"
             >
-              Previous
-            </button>
-            <span className="mx-4 text-teal-800">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-300"
-            >
-              Next
+              Forgot your code?
             </button>
           </div>
+        </form>
+      </div>
+    </DashboardLayout>
+  );
+
+  const renderSearchResults = () => (
+    <DashboardLayout>
+      <div className="container mx-auto p-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-bold text-teal-800 mb-6 text-center">
+            Student Search
+          </h2>
+
+          <form onSubmit={handleSearch} className="mb-8">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-grow">
+                <input
+                  type="text"
+                  value={searchParams.query}
+                  onChange={(e) =>
+                    setSearchParams((prev) => ({
+                      ...prev,
+                      query: e.target.value,
+                    }))
+                  }
+                  placeholder="Search students..."
+                  className="w-full px-4 py-2 border rounded-md focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+
+              <select
+                value={searchParams.field}
+                onChange={(e) =>
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    field: e.target.value,
+                  }))
+                }
+                className="px-4 py-2 border rounded-md focus:ring-teal-500 focus:border-teal-500"
+              >
+                {SEARCH_FIELDS.map((field) => (
+                  <option key={field.value} value={field.value}>
+                    {field.label}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="submit"
+                disabled={loading.search}
+                className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-300 transition-colors"
+              >
+                {loading.search ? "Searching..." : "Search"}
+              </button>
+            </div>
+          </form>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-teal-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-800 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-800 uppercase tracking-wider">
+                    User ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-800 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-800 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-800 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-800 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {results.length > 0 ? (
+                  results.map((student) => (
+                    <tr key={student._id} className="hover:bg-teal-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {student.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {student.userid}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {student.firstname} {student.lastname}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {student.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {student.phonenumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <select
+                          onChange={(e) =>
+                            handleActionSelect(e.target.value, student)
+                          }
+                          className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
+                          defaultValue=""
+                        >
+                          <option value="" disabled>
+                            Select action
+                          </option>
+                          <option value="payment">Make Payment</option>
+                          <option value="invoice">Copy Invoice Link</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="px-6 py-4 text-center text-sm text-gray-500"
+                    >
+                      {loading.default ? "Loading..." : "No students found"}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={pagination.currentPage === 1}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <span className="text-sm text-gray-700">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+
+              <button
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage === pagination.totalPages}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
   );
-}
+
+  return auth.isAuthorized ? renderSearchResults() : renderAuthForm();
+};
+
+export default Search;
