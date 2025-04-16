@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
 const StudentsData = () => {
   const [studentsData, setStudentsData] = useState([]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -15,19 +16,16 @@ const StudentsData = () => {
   const [selectedField, setSelectedField] = useState(null);
   const [selectedLeadId, setSelectedLeadId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1); // Total pages for pagination
+  const [totalPages, setTotalPages] = useState(1);
   const router = useRouter();
 
-  // Fetch student data with pagination
   const fetchStudentsData = async (page) => {
     try {
       const response = await axios.get(`/api/fetch-stds-info?page=${page}`, {
         withCredentials: true,
       });
-
-      // toast.success("Student data fetched successfully.");
       setStudentsData(response.data?.studentInfo);
-      setTotalPages(response.data?.pagination.totalPages); // Assuming the backend sends the totalPages
+      setTotalPages(response.data?.pagination.totalPages);
     } catch (error) {
       console.error("Error fetching student data:", error);
       toast.error("Failed to fetch student data.");
@@ -98,19 +96,32 @@ const StudentsData = () => {
     }
   };
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast.success("Invoice link copied to clipboard!");
+      })
+      .catch((err) => {
+        console.error("Failed to copy text: ", err);
+        toast.error("Failed to copy invoice link");
+      });
+  };
+
   const handleSelectChange = (event, _id, userid) => {
     const action = event.target.value;
 
     if (action === "payment") {
-      // Serialize the array data
       const urlParams = new URLSearchParams();
       urlParams.append("_id", _id);
       urlParams.append("userid", userid);
-
       router.push(`/admin/student-payment?${urlParams.toString()}`);
+    } else if (action === "invoice") {
+      const invoiceLink = `http://localhost:3000/student/invoice/${_id}`;
+      copyToClipboard(invoiceLink);
+      // Reset the select value
+      event.target.value = "";
     }
-
-    // Handle other actions like 'sendReminder' or 'markAsPaid' here
   };
 
   return (
@@ -287,7 +298,6 @@ const StudentsData = () => {
                     </td>
                     <td className="py-2 px-2 md:px-4 border border-gray-300 text-sm text-gray-700">
                       <div className="flex space-x-2">
-                        {/* Action Select Menu */}
                         <select
                           onChange={(e) =>
                             handleSelectChange(e, student._id, student.userid)
@@ -297,6 +307,9 @@ const StudentsData = () => {
                           <option value="">Select Action</option>
                           <option value="payment" className="text-green-600">
                             Make Payment
+                          </option>
+                          <option value="invoice" className="text-green-600">
+                            Copy Payment Link
                           </option>
                         </select>
                       </div>
