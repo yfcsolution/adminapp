@@ -117,7 +117,7 @@ const StudentsData = () => {
       urlParams.append("userid", userid);
       router.push(`/admin/student-payment?${urlParams.toString()}`);
     } else if (action === "invoice") {
-      const invoiceLink = `http://localhost:3000/student/invoice/${_id}`;
+      const invoiceLink = `https://sp.ilmulquran.com/student/invoice/${_id}`;
       copyToClipboard(invoiceLink);
       // Reset the select value
       event.target.value = "";
