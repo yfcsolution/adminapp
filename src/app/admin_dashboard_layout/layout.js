@@ -43,6 +43,5 @@ function DashboardLayout({ children }) {
     </div>
   );
 }
-
 // Wrap DashboardLayout with withAuth HOC
 export default withAuth(DashboardLayout);

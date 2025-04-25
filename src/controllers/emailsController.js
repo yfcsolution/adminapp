@@ -10,7 +10,6 @@ const MailOptions = (lead, template) => ({
   subject: template.subject, // Set dynamic subject from template
   html: template.html, // Set dynamic HTML content from template
 });
-
 const sendEmail = async (mailOptions) => {
   try {
     await transporter.sendMail(mailOptions); // Sends email

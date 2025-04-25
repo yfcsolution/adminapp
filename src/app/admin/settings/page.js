@@ -7,12 +7,88 @@ import {
   FaQuestionCircle,
   FaUnlock,
   FaUsers,
-} from "react-icons/fa"; // Added FaUsers icon for Roles
+  FaChevronDown,
+  FaCreditCard,
+  FaFileInvoice,
+} from "react-icons/fa";
 import Link from "next/link";
 import DashboardLayout from "../../admin_dashboard_layout/layout";
-
+import { toast } from "react-toastify";
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("changePassword"); // default active tab
+  const [activeTab, setActiveTab] = useState("changePassword");
+  const [openGroup, setOpenGroup] = useState(null);
+
+  const toggleGroup = (groupName) => {
+    setOpenGroup(openGroup === groupName ? null : groupName);
+  };
+
+  const settingsGroups = [
+    {
+      name: "password",
+      title: "Password",
+      icon: <FaLock />,
+      items: [
+        {
+          title: "Change Password",
+          tab: "changePassword",
+          href: "/admin/settings/change-password",
+        },
+      ],
+    },
+    {
+      name: "secretCode",
+      title: "Secret Code",
+      icon: <FaKey />,
+      items: [
+        {
+          title: "Add Secret Code",
+          tab: "addSecretCode",
+          href: "/admin/settings/secret-code/add",
+        },
+        {
+          title: "Update Secret Code",
+          tab: "updateSecretCode",
+          href: "/admin/settings/secret-code/update",
+        },
+        {
+          title: "Forgot Secret Code",
+          tab: "forgotSecretCode",
+          href: "/admin/settings/secret-code/forgot",
+        },
+      ],
+    },
+    {
+      name: "payments",
+      title: "Payments",
+      icon: <FaQuestionCircle />,
+      items: [
+        {
+          title: "Payment Modes",
+          tab: "paymentModes",
+          href: "/admin/settings/payments",
+          icon: <FaCreditCard className="mr-2" />,
+        },
+        {
+          title: "Invoice Footer",
+          tab: "invoices",
+          href: "/admin/settings/payments/invoice/footer-info",
+          icon: <FaFileInvoice className="mr-2" />,
+        },
+      ],
+    },
+    {
+      name: "roles",
+      title: "Roles",
+      icon: <FaUsers />,
+      items: [
+        {
+          title: "Roles",
+          tab: "roles",
+          href: "/admin/settings/roles",
+        },
+      ],
+    },
+  ];
 
   return (
     <DashboardLayout>
@@ -27,56 +103,72 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-6 justify-center mb-12">
-          <Link href="/admin/settings/change-password" passHref>
-            <Tab
-              title="Change Password"
-              icon={<FaLock />}
-              isActive={activeTab === "changePassword"}
-              onClick={() => setActiveTab("changePassword")}
-            />
-          </Link>
-          <Link href="/admin/settings/secret-code/add" passHref>
-            <Tab
-              title="Add Secret Code"
-              icon={<FaKey />}
-              isActive={activeTab === "addSecretCode"}
-              onClick={() => setActiveTab("addSecretCode")}
-            />
-          </Link>
-          <Link href="/admin/settings/secret-code/update" passHref>
-            <Tab
-              title="Update Secret Code"
-              icon={<FaEdit />}
-              isActive={activeTab === "updateSecretCode"}
-              onClick={() => setActiveTab("updateSecretCode")}
-            />
-          </Link>
-          <Link href="/admin/settings/secret-code/forgot" passHref>
-            <Tab
-              title="Forgot Secret Code"
-              icon={<FaUnlock />}
-              isActive={activeTab === "forgotSecretCode"}
-              onClick={() => setActiveTab("forgotSecretCode")}
-            />
-          </Link>
-          <Link href="/admin/settings/payments" passHref>
-            <Tab
-              title="Manage Payments"
-              icon={<FaQuestionCircle />}
-              isActive={activeTab === "payments"}
-              onClick={() => setActiveTab("payments")}
-            />
-          </Link>
-          <Link href="/admin/settings/roles" passHref>
-            <Tab
-              title="Roles"
-              icon={<FaUsers />}
-              isActive={activeTab === "roles"}
-              onClick={() => setActiveTab("roles")}
-            />
-          </Link>
+        {/* Grouped Navigation */}
+        <div className="flex flex-wrap justify-center gap-2 mb-12">
+          {settingsGroups.map((group) => (
+            <div key={group.name} className="relative group">
+              {group.items.length === 1 ? (
+                <Link href={group.items[0].href} passHref>
+                  <button
+                    className={`flex items-center space-x-3 px-6 py-3 rounded-lg text-base font-medium transition duration-300 ${
+                      activeTab === group.items[0].tab
+                        ? "bg-teal-600 text-white shadow-xl"
+                        : "text-teal-800 hover:bg-teal-100 hover:text-teal-900"
+                    }`}
+                    onClick={() => setActiveTab(group.items[0].tab)}
+                  >
+                    <div className="w-6 h-6">{group.icon}</div>
+                    <span className="font-medium">{group.title}</span>
+                  </button>
+                </Link>
+              ) : (
+                <>
+                  <button
+                    onClick={() => toggleGroup(group.name)}
+                    className={`flex items-center space-x-3 px-6 py-3 rounded-lg text-base font-medium transition duration-300 ${
+                      group.items.some((item) => item.tab === activeTab)
+                        ? "bg-teal-600 text-white shadow-xl"
+                        : "text-teal-800 hover:bg-teal-100 hover:text-teal-900"
+                    }`}
+                  >
+                    <div className="w-6 h-6">{group.icon}</div>
+                    <span className="font-medium">{group.title}</span>
+                    <FaChevronDown
+                      className={`transition-transform duration-200 ${
+                        openGroup === group.name ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  <div
+                    className={`absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden transition-all duration-200 ${
+                      openGroup === group.name
+                        ? "opacity-100 visible"
+                        : "opacity-0 invisible"
+                    }`}
+                  >
+                    {group.items.map((item) => (
+                      <Link href={item.href} passHref key={item.tab}>
+                        <div
+                          className={`flex items-center px-6 py-3 cursor-pointer transition duration-200 ${
+                            activeTab === item.tab
+                              ? "bg-teal-100 text-teal-900"
+                              : "hover:bg-gray-100 text-gray-800"
+                          }`}
+                          onClick={() => setActiveTab(item.tab)}
+                        >
+                          {item.icon && (
+                            <span className="mr-3">{item.icon}</span>
+                          )}
+                          <span className="font-medium">{item.title}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Content based on active tab */}
@@ -86,15 +178,25 @@ export default function SettingsPage() {
             {activeTab === "addSecretCode" && "Add a New Secret Code"}
             {activeTab === "updateSecretCode" && "Update Your Secret Code"}
             {activeTab === "forgotSecretCode" && "Forgot Your Secret Code?"}
-            {activeTab === "payments" && "Manage Payment Methods"}
+            {activeTab === "payments" && "Payment Settings"}
+            {activeTab === "paymentModes" && "Payment Modes"}
+            {activeTab === "invoices" && "Invoice Management"}
             {activeTab === "roles" && "Manage User Roles"}
           </h2>
           <p className="text-teal-700">
-            {activeTab === "changePassword" && "Here you can change your password."}
-            {activeTab === "addSecretCode" && "Add a new secret code for added security."}
-            {activeTab === "updateSecretCode" && "Update your existing secret code."}
-            {activeTab === "forgotSecretCode" && "Reset your forgotten secret code."}
-            {activeTab === "payments" && "Manage your payment methods and settings."}
+            {activeTab === "changePassword" &&
+              "Here you can change your password."}
+            {activeTab === "addSecretCode" &&
+              "Add a new secret code for added security."}
+            {activeTab === "updateSecretCode" &&
+              "Update your existing secret code."}
+            {activeTab === "forgotSecretCode" &&
+              "Reset your forgotten secret code."}
+            {activeTab === "payments" &&
+              "Manage your payment methods and settings."}
+            {activeTab === "paymentModes" &&
+              "Configure available payment methods and options."}
+            {activeTab === "invoices" && "View and manage all invoice records."}
             {activeTab === "roles" && "Assign and manage user roles."}
           </p>
         </div>
@@ -102,20 +204,3 @@ export default function SettingsPage() {
     </DashboardLayout>
   );
 }
-
-// Tab Component
-const Tab = ({ title, icon, isActive, onClick }) => {
-  return (
-    <button
-      className={`flex items-center space-x-3 px-6 py-3 rounded-lg text-base font-medium transition duration-300 ${
-        isActive
-          ? "bg-teal-600 text-white shadow-xl"
-          : "text-teal-800 hover:bg-teal-100 hover:text-teal-900"
-      }`}
-      onClick={onClick}
-    >
-      <div className="w-6 h-6">{icon}</div>
-      <span className="font-medium">{title}</span>
-    </button>
-  );
-};
