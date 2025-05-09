@@ -63,6 +63,10 @@ const emailSchema = new mongoose.Schema(
           type: Boolean,
           default: false,
         },
+        openedAt: {
+          type: String,
+          default: "",
+        },
         sent: {
           type: Boolean,
           default: false,

@@ -80,9 +80,7 @@ export async function POST(request) {
       });
 
       // Now that we have messageId, add tracking pixel
-      const trackingPixel = `<img src="${
-        process.env.NEXT_PUBLIC_BASE_URL
-      }/api/email/track?messageId=${encodeURIComponent(
+      const trackingPixel = `<img src="http://localhost:3000/api/email/track?messageId=${encodeURIComponent(
         mailResponse.messageId
       )}" width="1" height="1" style="display:none;" />`;
       const bodyWithTracking = `${body}${trackingPixel}`;
