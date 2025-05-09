@@ -3,11 +3,29 @@ import mongoose from "mongoose";
 import connectDB from "@/config/db";
 import Notes from "@/models/Notes";
 
-// Function to format date as DD-MMM-YY (e.g., 19-FEB-2025)
+// Function to format date as DD-MMM-YYYY HH:MM am/pm (e.g., 28-Apr-2025 07:45 pm)
 const formatDate = (date) => {
   if (!date) return null;
-  const options = { day: "2-digit", month: "short", year: "numeric" };
-  return new Date(date).toLocaleDateString("en-GB", options).toUpperCase();
+  const dt = new Date(date);
+  
+  // Get day part (two digits)
+  const day = dt.getDate().toString().padStart(2, '0');
+  
+  // Get month abbreviation (title case)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[dt.getMonth()];
+  
+  // Get full year
+  const year = dt.getFullYear();
+  
+  // Get hours and minutes in 12-hour format with am/pm
+  let hours = dt.getHours();
+  const minutes = dt.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours.toString() : '12'; // the hour '0' should be '12'
+  
+  return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
 };
 
 export const POST = async (req) => {

@@ -78,16 +78,20 @@ export async function POST(request) {
         html: body,
         text: body.replace(/<[^>]*>?/gm, ""),
       });
-      
+
       // Now that we have messageId, add tracking pixel
-      const trackingPixel = `<img src="${process.env.NEXT_PUBLIC_BASE_URL}/api/email/track?messageId=${encodeURIComponent(mailResponse.messageId)}" width="1" height="1" style="display:none;" />`;
+      const trackingPixel = `<img src="${
+        process.env.NEXT_PUBLIC_BASE_URL
+      }/api/email/track?messageId=${encodeURIComponent(
+        mailResponse.messageId
+      )}" width="1" height="1" style="display:none;" />`;
       const bodyWithTracking = `${body}${trackingPixel}`;
-      
+
       // Update email data with tracking pixel
       emailData.body = bodyWithTracking;
       emailData.messageId = mailResponse.messageId;
       emailData.sent = true;
-      
+
       // Resend the email with tracking pixel
       mailResponse = await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -199,8 +203,6 @@ export async function POST(request) {
     );
   }
 }
-
-
 
 export async function PUT() {
   return NextResponse.json(

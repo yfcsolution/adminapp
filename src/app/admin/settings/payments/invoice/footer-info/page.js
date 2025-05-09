@@ -23,6 +23,14 @@ export default function FooterManager() {
       const res = await fetch("/api/invoice/footer");
       const data = await res.json();
       if (data && Object.keys(data).length > 0) {
+        // Ensure phone object structure exists
+        if (data.contact && typeof data.contact.phone === 'string') {
+          data.contact.phone = {
+            uk: data.contact.phone,
+            au: '',
+            us: ''
+          };
+        }
         setFooterData(data);
       } else {
         setFooterData(null);
@@ -46,7 +54,11 @@ export default function FooterManager() {
 
     setFooterData((prevData) => {
       const updated = { ...prevData };
-      if (keys.length === 2) {
+      if (keys.length === 3) {
+        // For nested objects like contact.phone.uk
+        if (!updated[keys[0]][keys[1]]) updated[keys[0]][keys[1]] = {};
+        updated[keys[0]][keys[1]][keys[2]] = value;
+      } else if (keys.length === 2) {
         updated[keys[0]][keys[1]] = value;
       } else {
         updated[name] = value;
@@ -142,7 +154,15 @@ export default function FooterManager() {
                     accountNumber: "",
                   },
                   terms: [],
-                  contact: { email: "", phone: "", website: "" },
+                  contact: { 
+                    email: "", 
+                    phone: {
+                      uk: "",
+                      au: "",
+                      us: ""
+                    }, 
+                    website: "" 
+                  },
                   footerText: { thankYouMessage: "", signatureMessage: "" },
                 });
                 setIsEditing(true);
@@ -244,16 +264,33 @@ export default function FooterManager() {
                       {footerData.contact.email || "-"}
                     </p>
                   </div>
-                  <div>
-                    <div className="flex items-center">
+                  <div className="col-span-2">
+                    <div className="flex items-center mb-1">
                       <FaPhone className="text-gray-400 mr-2 text-sm" />
-                      <p className="text-sm text-gray-500">Phone</p>
+                      <p className="text-sm text-gray-500">Phone Numbers</p>
                     </div>
-                    <p className="font-medium mt-1">
-                      {footerData.contact.phone || "-"}
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">UK</p>
+                        <p className="font-medium mt-1">
+                          {footerData.contact.phone?.uk || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Australia</p>
+                        <p className="font-medium mt-1">
+                          {footerData.contact.phone?.au || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">USA</p>
+                        <p className="font-medium mt-1">
+                          {footerData.contact.phone?.us || "-"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
+                  <div className="md:col-span-3">
                     <div className="flex items-center">
                       <FaGlobe className="text-gray-400 mr-2 text-sm" />
                       <p className="text-sm text-gray-500">Website</p>
@@ -344,20 +381,76 @@ export default function FooterManager() {
                   </h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {["email", "phone", "website"].map((field) => (
-                    <div key={field}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {field.charAt(0).toUpperCase() + field.slice(1)}
-                      </label>
-                      <input
-                        type="text"
-                        name={`contact.${field}`}
-                        value={footerData.contact[field]}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                      />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="text"
+                      name="contact.email"
+                      value={footerData.contact.email}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Numbers
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          UK
+                        </label>
+                        <input
+                          type="text"
+                          name="contact.phone.uk"
+                          value={footerData.contact.phone?.uk || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="+447862067920"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          Australia
+                        </label>
+                        <input
+                          type="text"
+                          name="contact.phone.au"
+                          value={footerData.contact.phone?.au || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="+61480050048"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          USA
+                        </label>
+                        <input
+                          type="text"
+                          name="contact.phone.us"
+                          value={footerData.contact.phone?.us || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="+19142791693"
+                        />
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Website
+                    </label>
+                    <input
+                      type="text"
+                      name="contact.website"
+                      value={footerData.contact.website}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                    />
+                  </div>
                 </div>
               </div>
 
