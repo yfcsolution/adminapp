@@ -30,6 +30,7 @@ const LeadsEmail = ({ leadId }) => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showComposeEmail, setShowComposeEmail] = useState(false);
+  const [activeTab, setActiveTab] = useState("inbox");
   const router = useRouter();
 
   useEffect(() => {
@@ -38,19 +39,34 @@ const LeadsEmail = ({ leadId }) => {
     } else {
       fetchEmails();
     }
-  }, [leadId]);
+  }, [leadId, activeTab]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setEmails([]);
+    setSelectedEmail(null);
+    setError(null);
+  };
 
   const fetchEmails = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await axios.post("/api/email/get", { leadId });
+      const body = { leadId };
+      if (activeTab === "sent") {
+        body.sent = true;
+      } else {
+        body.received = true;
+      }
 
-      // Handle different response structures
+      const response = await axios.post("/api/email/get", body);
+
       let emailRecords = [];
 
-      if (Array.isArray(response.data)) {
+      if (Array.isArray(response.data?.emails)) {
+        emailRecords = response.data.emails;
+      } else if (Array.isArray(response.data)) {
         emailRecords = response.data;
       } else if (response.data?.emails) {
         emailRecords = response.data.emails;
@@ -116,9 +132,10 @@ const LeadsEmail = ({ leadId }) => {
   const handleNewEmail = () => {
     setShowComposeEmail(true);
   };
+
   const handleEmailSent = () => {
     setShowComposeEmail(false);
-    fetchEmails(); // Refresh the email list
+    fetchEmails();
   };
 
   const handleCloseCompose = () => {
@@ -161,7 +178,7 @@ const LeadsEmail = ({ leadId }) => {
   if (loading && emails.length === 0) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mb-4"></div>
         <p className="text-gray-600 flex items-center">
           <FiInbox className="mr-2" /> Loading emails...
         </p>
@@ -171,26 +188,25 @@ const LeadsEmail = ({ leadId }) => {
 
   return (
     <div className="bg-gray-50">
-      {/* Show either email list or email content, not both */}
       {!selectedEmail ? (
-        // Email List View
         <div className="bg-white">
           <div className="p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xl font-semibold flex items-center">
-                <FiInbox className="mr-2 text-blue-600" /> Sent Emails
+                <FiInbox className="mr-2 text-teal-600" />
+                {activeTab === "inbox" ? "Inbox" : "Sent Emails"}
               </h2>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleNewEmail}
-                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors flex items-center"
+                  className="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition-colors flex items-center"
                   title="New Email"
                 >
                   <FiPlus className="h-4 w-4" />
                 </button>
                 <button
                   onClick={handleRefresh}
-                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                  className="p-2 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
                   title="Refresh emails"
                 >
                   <FiRefreshCw
@@ -200,6 +216,29 @@ const LeadsEmail = ({ leadId }) => {
               </div>
             </div>
 
+            <div className="flex border-b border-gray-200 mb-4">
+              <button
+                className={`py-2 px-4 font-medium text-sm flex items-center ${
+                  activeTab === "inbox"
+                    ? "text-teal-600 border-b-2 border-teal-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => handleTabChange("inbox")}
+              >
+                <FiInbox className="mr-2" /> Inbox
+              </button>
+              <button
+                className={`py-2 px-4 font-medium text-sm flex items-center ${
+                  activeTab === "sent"
+                    ? "text-teal-600 border-b-2 border-teal-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => handleTabChange("sent")}
+              >
+                <FiSend className="mr-2" /> Sent
+              </button>
+            </div>
+
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <FiSearch className="text-gray-400" />
@@ -207,7 +246,7 @@ const LeadsEmail = ({ leadId }) => {
               <input
                 type="text"
                 placeholder="Search emails..."
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -234,6 +273,13 @@ const LeadsEmail = ({ leadId }) => {
             </div>
           )}
 
+          {loading && emails.length === 0 && (
+            <div className="p-8 text-center text-gray-500 flex flex-col items-center">
+              <FiRefreshCw className="animate-spin text-4xl mb-3 text-teal-500" />
+              <p>Loading emails...</p>
+            </div>
+          )}
+
           {error && (
             <div className="p-4 bg-red-50 text-red-600 flex items-center justify-between">
               <div className="flex items-center">
@@ -249,20 +295,17 @@ const LeadsEmail = ({ leadId }) => {
             </div>
           )}
 
-          {filteredEmails.length > 0 ? (
+          {!loading && filteredEmails.length > 0 ? (
             <div className="divide-y divide-gray-100">
               {filteredEmails.map((email) => (
                 <div
                   key={email.messageId || email.id || Math.random()}
                   className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                     selectedEmail?.messageId === email.messageId
-                      ? "bg-blue-50 border-l-4 border-blue-500"
+                      ? "bg-teal-50 border-l-4 border-teal-500"
                       : ""
                   }`}
-                  onClick={() => {
-                    console.log("Email clicked:", email);
-                    setSelectedEmail(email);
-                  }}
+                  onClick={() => setSelectedEmail(email)}
                 >
                   <div className="flex justify-between items-start mb-1">
                     <div className="flex items-center">
@@ -297,34 +340,33 @@ const LeadsEmail = ({ leadId }) => {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : !loading && emails.length === 0 ? (
             <div className="p-8 text-center text-gray-500 flex flex-col items-center">
               <FiMail className="text-4xl mb-3 text-gray-300" />
               <p>No emails found</p>
               <button
                 onClick={handleNewEmail}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+                className="mt-4 px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 flex items-center"
               >
                 <FiPlus className="mr-2" /> Compose New Email
               </button>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="mt-2 text-blue-600 hover:text-blue-800 flex items-center"
+                  className="mt-2 text-teal-600 hover:text-teal-800 flex items-center"
                 >
                   <FiX className="mr-1" /> Clear search
                 </button>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       ) : (
-        // Email Content View
         <div className="bg-white p-4">
           <div className="mb-4 flex items-center">
             <button
               onClick={() => setSelectedEmail(null)}
-              className="p-2 mr-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full"
+              className="p-2 mr-2 text-gray-500 hover:text-teal-600 hover:bg-gray-100 rounded-full"
             >
               <FiChevronLeft className="h-5 w-5" />
             </button>
@@ -381,8 +423,8 @@ const LeadsEmail = ({ leadId }) => {
                     className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center">
-                      <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                        <FiPaperclip className="text-blue-600" />
+                      <div className="bg-teal-100 p-2 rounded-lg mr-3">
+                        <FiPaperclip className="text-teal-600" />
                       </div>
                       <div>
                         <p className="font-medium text-sm truncate">
@@ -401,7 +443,6 @@ const LeadsEmail = ({ leadId }) => {
         </div>
       )}
 
-      {/* Compose Email Modal */}
       {showComposeEmail && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20 p-4">
           <EmailComposer
