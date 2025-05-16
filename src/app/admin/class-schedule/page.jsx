@@ -8,7 +8,6 @@ const StudentClassSchedule = () => {
   const [studentsData, setStudentsData] = useState([]);
   const [userId, setUserId] = useState(""); // Store the input userId
   const [searchResult, setSearchResult] = useState([]); // Store the filtered data based on search
-
   useEffect(() => {
     fetchClassesSchedule(); // Fetch default data when the component mounts
   }, []);
