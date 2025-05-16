@@ -53,7 +53,7 @@ export function startEmailListener(onNewEmail) {
         console.log(`[EMAIL LISTENER] New email detected: ${numNewMsgs} new messages`);
 
         const fetch = imap.seq.fetch(`${box.messages.total}:${box.messages.total}`, {
-          bodies: ["HEADER.FIELDS (FROM TO SUBJECT DATE)", "TEXT"],
+          bodies: ["HEADER.FIELDS (FROM TO SUBJECT DATE MESSAGE-ID)", "TEXT"],
           struct: true,
         });
 
@@ -65,6 +65,7 @@ export function startEmailListener(onNewEmail) {
             from: null,
             to: null,
             subject: null,
+            messageId: null,
           };
 
           msg.on("body", (stream, info) => {
@@ -75,17 +76,27 @@ export function startEmailListener(onNewEmail) {
                 email.body = cleanEmailBody(buffer);
               } else {
                 const headers = Imap.parseHeader(buffer);
+                email.headers = headers;
                 email.from = headers.from ? headers.from[0] : null;
                 email.to = headers.to ? headers.to[0] : null;
                 email.subject = headers.subject ? headers.subject[0] : null;
                 email.date = headers.date ? headers.date[0] : null;
+                email.messageId = headers["message-id"] ? headers["message-id"][0] : null;
               }
             });
           });
 
           msg.once("end", () => {
-            console.log("[EMAIL LISTENER] New email received:", email.subject);
-            onNewEmail(email); // Pass the email to your callback
+            console.log("[EMAIL LISTENER] New email received:");
+            console.log("From:", email.from);
+            console.log("To:", email.to);
+            console.log("Subject:", email.subject);
+            console.log("Date:", email.date);
+            console.log("Body:", email.body);
+            console.log("Message ID:", email.messageId);
+            console.log("Headers:", email.headers);
+
+            onNewEmail(email);
           });
         });
 

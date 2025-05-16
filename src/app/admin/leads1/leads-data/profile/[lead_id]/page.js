@@ -7,12 +7,13 @@ import Notes from "@/components/Notes";
 import LeadProfile from "@/components/LeadProfile";
 import DuplicateLeads from "@/components/DuplicateLeads";
 import LeadsStudents from "@/components/LeadsStudents";
-import {FaEnvelope, FaEdit } from "react-icons/fa";
+import { FaEnvelope, FaEdit } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import EditLeadModal from "@/components/EditLead";
 import LeadChat from "@/components/LeadChat";
+import LeadsEmail from "@/components/LeadsEmail";
 
 const Page = () => {
   const [activeSection, setActiveSection] = useState("Profile");
@@ -125,7 +126,7 @@ const Page = () => {
           {activeSection === "Notes" && <Notes leadId={lead_id} />}
           {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}
           {activeSection === "Email Activity" && (
-            <p>Email Activity will be here</p>
+            <LeadsEmail leadId={lead_id} />
           )}
           {activeSection === "Classes" && <LeadsStudents leadId={lead_id} />}
           {activeSection === "Activity Log" && <p>Activity Log will be here</p>}

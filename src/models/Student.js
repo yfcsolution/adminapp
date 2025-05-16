@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
 // Sub-schema for class history
 const classHistorySchema = new mongoose.Schema(
   {
@@ -20,6 +19,7 @@ const classHistorySchema = new mongoose.Schema(
   },
   { _id: false } // Prevent creation of an extra `_id` field for each sub-document
 );
+
 // Sub-schema for class history
 const classScheduleSchema = new mongoose.Schema(
   {

@@ -6,6 +6,9 @@ const emailSchema = new mongoose.Schema(
     to: {
       type: String,
     },
+    from: {
+      type: String,
+    },
     leadId: {
       type: Number,
       index: true,

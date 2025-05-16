@@ -19,12 +19,10 @@ export async function POST(request) {
     }
 
     let receiver;
-    let foundLead = null;
-    let foundStudent = null;
     let identifier = {};
 
     if (userId) {
-      foundStudent = await Student.findOne({ userid: userId });
+      const foundStudent = await Student.findOne({ userid: userId });
       if (!foundStudent) {
         return NextResponse.json(
           { error: "Student not found" },
@@ -34,7 +32,7 @@ export async function POST(request) {
       receiver = foundStudent.email;
       identifier.familyId = foundStudent.userid;
     } else if (leadId) {
-      foundLead = await LeadsForm.findOne({ LEAD_ID: leadId });
+      const foundLead = await LeadsForm.findOne({ LEAD_ID: leadId });
       if (!foundLead) {
         return NextResponse.json({ error: "Lead not found" }, { status: 404 });
       }
@@ -42,7 +40,21 @@ export async function POST(request) {
       identifier.leadId = foundLead.LEAD_ID;
     } else if (to) {
       receiver = to;
-      identifier.receiverEmail = to;
+      
+      // Look for student with this email
+      const foundStudent = await Student.findOne({ email: to });
+      if (foundStudent) {
+        identifier.familyId = foundStudent.userid;
+      } else {
+        // If no student found, look for lead with this email
+        const foundLead = await LeadsForm.findOne({ EMAIL: to });
+        if (foundLead) {
+          identifier.leadId = foundLead.LEAD_ID;
+        } else {
+          // If neither student nor lead found, just use the email
+          identifier.receiverEmail = to;
+        }
+      }
     } else {
       return NextResponse.json(
         { error: "No valid recipient specified" },
@@ -58,139 +70,88 @@ export async function POST(request) {
       );
     }
 
-    // First create email data without tracking pixel
+    // Generate a unique messageId for tracking
+    const messageId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    // Create tracking pixel URL - use your actual domain in production
+    const trackingPixelUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/email/track?messageId=${encodeURIComponent(messageId)}`;
+
+    const bodyWithTracking = `
+      <html>
+        <body>
+          ${body}
+          <img src="${trackingPixelUrl}" width="1" height="1" style="display:none;" alt="tracking pixel" />
+        </body>
+      </html>
+    `;
+
+    // Send the email with tracking pixel
+    const mailResponse = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: receiver,
+      subject,
+      html: bodyWithTracking,
+      text: body.replace(/<[^>]*>?/gm, ""),
+      headers: {
+        'X-Message-ID': messageId // Custom header for tracking
+      }
+    });
+
+    // Prepare email data for the database
     const emailData = {
       subject,
-      body, // Will be updated with tracking pixel later
+      body: bodyWithTracking,
       isReply: false,
       sender: process.env.EMAIL_USER,
       receiver,
+      messageId,
       opened: false,
+      sent: true,
+      sentAt: new Date()
     };
 
-    let mailResponse;
-    try {
-      // First send email without tracking pixel to get messageId
-      mailResponse = await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: receiver,
-        subject,
-        html: body,
-        text: body.replace(/<[^>]*>?/gm, ""),
-      });
-
-      // Now that we have messageId, add tracking pixel
-      const trackingPixel = `<img src="http://localhost:3000/api/email/track?messageId=${encodeURIComponent(
-        mailResponse.messageId
-      )}" width="1" height="1" style="display:none;" />`;
-      const bodyWithTracking = `${body}${trackingPixel}`;
-
-      // Update email data with tracking pixel
-      emailData.body = bodyWithTracking;
-      emailData.messageId = mailResponse.messageId;
-      emailData.sent = true;
-
-      // Resend the email with tracking pixel
-      mailResponse = await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: receiver,
-        subject,
-        html: bodyWithTracking,
-        text: body.replace(/<[^>]*>?/gm, ""),
-      });
-    } catch (sendError) {
-      console.error("Error sending email:", sendError);
-      emailData.messageId = `failed-${Date.now()}`;
-      emailData.sent = false;
-      throw sendError;
-    }
-
-    let query = {};
+    // Determine the query based on what identifiers we have
+    let query;
     if (identifier.leadId) {
-      query.leadId = identifier.leadId;
+      query = { leadId: identifier.leadId };
     } else if (identifier.familyId) {
-      query.familyId = identifier.familyId;
+      query = { familyId: identifier.familyId };
     } else {
-      query = { "emails.receiver": identifier.receiverEmail };
+      query = { 
+        $or: [
+          { "emails.receiver": identifier.receiverEmail },
+          { to: identifier.receiverEmail }
+        ],
+        familyId: { $exists: false },
+        leadId: { $exists: false }
+      };
     }
 
-    try {
-      const existingRecord = await Email.findOne(query);
-
-      if (existingRecord) {
-        const updateFields = {
-          $push: { emails: emailData },
-          $set: {},
-        };
-
-        if (identifier.leadId) {
-          updateFields.$set.leadId = identifier.leadId;
-        }
-        if (identifier.familyId) {
-          updateFields.$set.familyId = identifier.familyId;
-        }
-
-        await Email.findOneAndUpdate({ _id: existingRecord._id }, updateFields);
-      } else {
-        const newRecordData = {
-          emails: [emailData],
-          leadId: identifier.leadId || null,
-          familyId: identifier.familyId || null,
-          to: identifier.receiverEmail || null,
-        };
-
-        if (to) {
-          newRecordData.to = to;
-        }
-
-        await Email.create(newRecordData);
-      }
-
-      if (mailResponse) {
-        return NextResponse.json(
-          {
-            success: true,
-            message: "Email sent and logged successfully",
-            messageId: mailResponse.messageId,
-          },
-          { status: 200 }
-        );
-      }
-    } catch (dbError) {
-      console.error("Database error:", dbError);
-      throw new Error("Failed to save email record");
+    // Save to the database
+    const existingRecord = await Email.findOne(query);
+    if (existingRecord) {
+      await Email.findByIdAndUpdate(existingRecord._id, {
+        $push: { emails: emailData },
+      });
+    } else {
+      await Email.create({
+        emails: [emailData],
+        leadId: identifier.leadId || null,
+        familyId: identifier.familyId || null,
+        to: identifier.receiverEmail || null,
+      });
     }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Email sent and logged successfully",
+        messageId,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error in email route:", error);
-
-    let fallbackReceiver = "unknown@example.com";
-    let subject = "Failed to send";
-    let body = "N/A";
-
-    try {
-      const parsedBody = await request.json();
-      fallbackReceiver = parsedBody.to || fallbackReceiver;
-      subject = parsedBody.subject || subject;
-      body = parsedBody.body || body;
-    } catch (_) {}
-
-    const emailData = {
-      subject,
-      body,
-      isReply: false,
-      sender: process.env.EMAIL_USER,
-      receiver: fallbackReceiver,
-      messageId: `failed-${Date.now()}`,
-      opened: false,
-      sent: false,
-    };
-
-    try {
-      await Email.create({ emails: [emailData] });
-    } catch (saveError) {
-      console.error("Failed to save error record:", saveError);
-    }
-
     return NextResponse.json(
       {
         error: "Failed to process email",
@@ -200,18 +161,4 @@ export async function POST(request) {
       { status: 500 }
     );
   }
-}
-
-export async function PUT() {
-  return NextResponse.json(
-    { error: "Method not allowed" },
-    { status: 405, headers: { Allow: "POST" } }
-  );
-}
-
-export async function DELETE() {
-  return NextResponse.json(
-    { error: "Method not allowed" },
-    { status: 405, headers: { Allow: "POST" } }
-  );
 }
