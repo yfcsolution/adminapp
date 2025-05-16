@@ -40,7 +40,7 @@ export async function POST(request) {
       identifier.leadId = foundLead.LEAD_ID;
     } else if (to) {
       receiver = to;
-      
+
       // Look for student with this email
       const foundStudent = await Student.findOne({ email: to });
       if (foundStudent) {
@@ -71,10 +71,14 @@ export async function POST(request) {
     }
 
     // Generate a unique messageId for tracking
-    const messageId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    const messageId = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 15)}`;
 
     // Create tracking pixel URL - use your actual domain in production
-    const trackingPixelUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/email/track?messageId=${encodeURIComponent(messageId)}`;
+    const trackingPixelUrl = `https://ap.ilmulquran.com/api/email/track?messageId=${encodeURIComponent(
+      messageId
+    )}`;
 
     const bodyWithTracking = `
       <html>
@@ -93,8 +97,8 @@ export async function POST(request) {
       html: bodyWithTracking,
       text: body.replace(/<[^>]*>?/gm, ""),
       headers: {
-        'X-Message-ID': messageId // Custom header for tracking
-      }
+        "X-Message-ID": messageId, // Custom header for tracking
+      },
     });
 
     // Prepare email data for the database
@@ -107,7 +111,7 @@ export async function POST(request) {
       messageId,
       opened: false,
       sent: true,
-      sentAt: new Date()
+      sentAt: new Date(),
     };
 
     // Determine the query based on what identifiers we have
@@ -117,13 +121,13 @@ export async function POST(request) {
     } else if (identifier.familyId) {
       query = { familyId: identifier.familyId };
     } else {
-      query = { 
+      query = {
         $or: [
           { "emails.receiver": identifier.receiverEmail },
-          { to: identifier.receiverEmail }
+          { to: identifier.receiverEmail },
         ],
         familyId: { $exists: false },
-        leadId: { $exists: false }
+        leadId: { $exists: false },
       };
     }
 
