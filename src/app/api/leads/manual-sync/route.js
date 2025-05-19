@@ -43,7 +43,6 @@ export async function POST(req) {
       REQUEST_FORM: lead.REQUEST_FORM,
       WHATSAPP_STATUS: lead.WHATSAPP_STATUS,
     };
-
     // Send the lead data to the Oracle endpoint
     const response = await axios.post(
       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads/insertleads",
