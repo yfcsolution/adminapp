@@ -37,7 +37,7 @@ export const syncDataToOracle = async (lead) => {
 
     // Make the POST request using Axios
     const response = await axios.post(
-      "http://103.18.23.62:8080/apeks/apps/erp/YfcLeads/insertleads",
+      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads/insertleads",
       requestBody,
       {
         headers: {

@@ -83,7 +83,7 @@ RemindersSchema.methods.syncToExternalAPI = async function (
     };
 
     const response = await axios.post(
-      "http://103.18.23.62:8080/apeks/apps/erp/reminders/postdata",
+      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/reminders/postdata",
       payload // Removed JSON.stringify
     );
 

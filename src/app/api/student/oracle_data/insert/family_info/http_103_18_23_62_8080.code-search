@@ -1,0 +1,99 @@
+# Query: http://103.18.23.62:8080
+# ContextLines: 1
+
+19 results - 19 files
+
+src\app\api\messages\whatsapp\webhooks\manual-sync\route.js:
+  68      const response = await axios.post(
+  69:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/waconversations/insert/",
+  70        data,
+
+src\app\api\student\oracle_data\insert\class_history\route.js:
+  46      const response = await axios.get(
+  47:       `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/classhistory/getdata?P_USER_ID=${userid}&P_STUDENT_ID=${studentId}&P_FROM_DATE=${currentDate}&P_TO_DATE=${oneMonthAgo}`
+  48      );
+
+src\app\api\student\oracle_data\insert\class_schedule\route.js:
+  13      const response = await axios.get(
+  14:       `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/classschedule/getdata/?P_USER_ID=${userid}`
+  15      );
+
+src\app\api\student\oracle_data\insert\family_info\route.js:
+  14      const response = await axios.get(
+  15:       `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/getdata/yfc/?P_USER_ID=${userid}`
+  16      );
+
+src\app\api\student\oracle_data\insert\invoice_info\route.js:
+  13      const response = await axios.get(
+  14:       `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/invoiceinfo/getdata?P_USER_ID=${userid}`
+  15      );
+
+src\app\api\student\oracle_data\insert\payment_history\route.js:
+  13      const response = await axios.get(
+  14:       `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/paymenthistory/getdata?P_USER_ID=${userid}`
+  15      );
+
+src\app\api\sync-leads\route.js:
+  35          const response = await axios.post(
+  36:           "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads/insertleads",
+  37            leadData
+
+src\components\SyncToOracle.jsx:
+  39      const response = await axios.post(
+  40:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads/insertleads",
+  41        requestBody,
+
+src\controllers\leadsController.js:
+  501      const response = await fetch(
+  502:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/addstudent/postdata",
+  503        {
+
+src\controllers\proxyController.js:
+  19      const EXTERNAL_API_URL =
+  20:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/classhistory/getdata";
+  21  
+
+src\controllers\whatsappWebhookController.js:
+  87          const response = await axios.post(
+  88:           "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/waconversations/insert/",
+  89            data
+
+src\lib\cors.js:
+  1  export const runCors = async (req) => {
+  2:   const allowedOrigins = ["https://sss.yourfuturecampus.com:8443"]; // Replace "*" with your allowed origins for better security
+  3  const allowedMethods = ["GET", "POST", "OPTIONS"];
+
+src\models\DuplicateLeads.js:
+  93      const oracleEndpoint =
+  94:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads_Contact/insertleads"; // Update this with your actual Oracle API endpoint
+  95  
+
+src\models\LeadsForm.js:
+  144      const oracleEndpoint =
+  145:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads/insertleads"; // Update this with your actual Oracle API endpoint
+  146  
+
+src\models\Notes.js:
+  86      const response = await axios.post(
+  87:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/notes/postdata",
+  88        payload
+
+src\models\Notices.js:
+  57      const response = await axios.post(
+  58:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/notes/postdata",
+  59        payload
+
+src\models\Reminders.js:
+  85      const response = await axios.post(
+  86:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/reminders/postdata",
+  87        payload // Removed JSON.stringify
+
+src\models\WhatsappChat.js:
+  94  //     const response = await axios.post(
+  95: //       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/waconversations/insert/",
+  96  //       data
+
+src\models\whatsappWebhookSchema.js:
+  93      const response = await axios.post(
+  94:       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/whatsapp/insert/",
+  95        data

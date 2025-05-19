@@ -1,5 +1,5 @@
 export const runCors = async (req) => {
-  const allowedOrigins = ["http://103.18.23.62:8080"]; // Replace "*" with your allowed origins for better security
+  const allowedOrigins = ["https://sss.yourfuturecampus.com:8443"]; // Replace "*" with your allowed origins for better security
 const allowedMethods = ["GET", "POST", "OPTIONS"];
  const allowedHeaders = "Content-Type, Authorization";
 

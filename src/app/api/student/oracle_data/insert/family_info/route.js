@@ -12,7 +12,7 @@ export async function POST(req) {
 
     // Fetch data from the external API
     const response = await axios.get(
-      `http://103.18.23.62:8080/apeks/apps/erp/getdata/yfc/?P_USER_ID=${userid}`
+      `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/getdata/yfc/?P_USER_ID=${userid}`
     );
 
     const data = response.data.items; // Ensure this path is correct based on the API response structure
@@ -23,7 +23,6 @@ export async function POST(req) {
         { status: 404 }
       );
     }
-
 
     // Find the student by userid
     const student = await Student.findOne({ userid });

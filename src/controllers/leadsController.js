@@ -499,7 +499,7 @@ export const handleLeadsAdditionalData = async (req) => {
 
     // Send data to the external API
     const response = await fetch(
-      "http://103.18.23.62:8080/apeks/apps/erp/addstudent/postdata",
+      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/addstudent/postdata",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -44,7 +44,7 @@ export async function POST(req) {
 
     // Fetch data from the external API
     const response = await axios.get(
-      `http://103.18.23.62:8080/apeks/apps/erp/classhistory/getdata?P_USER_ID=${userid}&P_STUDENT_ID=${studentId}&P_FROM_DATE=${currentDate}&P_TO_DATE=${oneMonthAgo}`
+      `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/classhistory/getdata?P_USER_ID=${userid}&P_STUDENT_ID=${studentId}&P_FROM_DATE=${currentDate}&P_TO_DATE=${oneMonthAgo}`
     );
 
     const data = response.data.items; // Ensure this path is correct based on the API response structure
