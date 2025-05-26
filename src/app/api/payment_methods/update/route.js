@@ -2,40 +2,30 @@ import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import paymentMethodsSchema from "@/models/paymentMethodsSchema";
 
-// API Route Handler for updating payment method using POST
 export async function POST(req) {
   try {
-    // Ensure we're connected to the DB
     await connectDB();
 
-    // Parse incoming request body
-    const { MethodId, MethodName, Available } = await req.json();
+    const { id, name, description, active } = await req.json();
 
-    // Validation: Ensure MethodId is provided
-    if (!MethodId) {
+    if (!id) {
       return NextResponse.json(
-        { success: false, message: "MethodId is required" },
+        { success: false, message: "ID is required" },
         { status: 400 }
       );
     }
 
-    // Prepare the update fields
     const updatedFields = {};
-    if (MethodName) {
-      updatedFields.MethodName = MethodName.toLowerCase(); // Convert MethodName to lowercase
-    }
-    if (Available !== undefined) {
-      updatedFields.Available = Available;
-    }
+    if (name) updatedFields.name = name;
+    if (description !== undefined) updatedFields.description = description;
+    if (active !== undefined) updatedFields.active = active;
 
-    // Find the payment method by MethodId and update it
     const updatedMethod = await paymentMethodsSchema.findOneAndUpdate(
-      { MethodId },
+      { id },
       updatedFields,
-      { new: true } // Return the updated document
+      { new: true }
     );
 
-    // Check if the payment method was found
     if (!updatedMethod) {
       return NextResponse.json(
         { success: false, message: "Payment method not found" },

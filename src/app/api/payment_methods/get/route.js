@@ -2,17 +2,14 @@ import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import paymentMethodsSchema from "@/models/paymentMethodsSchema";
 
-
-// API Route Handler
 export async function GET(req) {
   try {
-    // Ensure we're connected to the DB
     await connectDB();
 
-    // Fetch all payment methods
-    const paymentMethods = await paymentMethodsSchema.find(); // lean() to get plain JS objects
+    const paymentMethods = await paymentMethodsSchema
+      .find()
+      .sort({ createdAt: -1 });
 
-    // Return response with data
     return NextResponse.json({
       success: true,
       data: paymentMethods,

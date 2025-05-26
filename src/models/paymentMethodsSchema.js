@@ -1,24 +1,28 @@
 import mongoose from "mongoose";
 
-// Define the schema for the payment methods
 const paymentMethodsSchema = new mongoose.Schema(
   {
-    MethodId: {
+    id: {
       type: Number,
-      default: 1, // Default is 1
+      required: true,
+      unique: true,
     },
-    MethodName: {
+    name: {
       type: String,
-      required: true, // Make MethodName required
+      required: true,
     },
-    Available: {
+    description: {
+      type: String,
+      default: "",
+    },
+    active: {
       type: Boolean,
-      default: true, // Default is true
+      default: true,
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt fields
-    minimize: false, // Prevent mongoose from removing empty objects
+    timestamps: true,
+    minimize: false,
   }
 );
 

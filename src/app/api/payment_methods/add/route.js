@@ -2,33 +2,35 @@ import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import paymentMethodsSchema from "@/models/paymentMethodsSchema";
 
-// API Route Handler
 export async function POST(req) {
   try {
-    // Ensure we're connected to the DB
     await connectDB();
 
-    // Parse incoming request body
-    const { MethodName, Available } = await req.json(); // Getting data from the request body
+    const { id, name, description, active } = await req.json();
 
-    // Validation
-    if (!MethodName) {
+    if (!id || !name) {
       return NextResponse.json(
-        { success: false, message: "MethodName is required" },
+        { success: false, message: "ID and Name are required" },
         { status: 400 }
       );
     }
 
-    // Convert MethodName to lowercase before inserting it into the database
-    const formattedMethodName = MethodName.toLowerCase();
+    // Check if ID already exists
+    const existingMethod = await paymentMethodsSchema.findOne({ id });
+    if (existingMethod) {
+      return NextResponse.json(
+        { success: false, message: "Payment method with this ID already exists" },
+        { status: 400 }
+      );
+    }
 
-    // Create new payment method with lowercase MethodName
     const newMethod = new paymentMethodsSchema({
-      MethodName: formattedMethodName,
-      Available: Available || true, // Default to true if not provided
+      id,
+      name,
+      description: description || "",
+      active: active !== undefined ? active : true,
     });
 
-    // Save the payment method to the database
     await newMethod.save();
 
     return NextResponse.json({
