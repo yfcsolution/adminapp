@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import connectDB from "@/config/db"; // Ensure your DB connection is set up correctly
 import BlogSchema from "@/models/BlogSchema"; // Path to your Blog model
 
-
 // POST route for editing an existing blog
 export async function POST(request) {
   try {
