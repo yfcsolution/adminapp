@@ -17,7 +17,6 @@
     {
       "path": "/api/backup",
       "schedule": "0 0 * * *",
-      "method": "POST",
       "headers": {
         "Authorization": "Bearer ijazwakeelkhan"
       }
