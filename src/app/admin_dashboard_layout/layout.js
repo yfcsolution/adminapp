@@ -23,7 +23,6 @@ function DashboardLayout({ children }) {
   }, []);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
