@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import LeadsForm from "@/models/LeadsForm";
 import Student from "@/models/Student";
+import PaymentLinks from "@/models/PaymentLinks";
 import bcrypt from "bcrypt";
 import SecretCode from "@/models/secretCodeSchema";
 import User from "@/models/User";
@@ -153,12 +154,12 @@ export const addStdDetails = async (req) => {
 };
 
 export const addStdFromLead = async (req) => {
-  // Create new user with auto-increment 'id' and 'userId'
   try {
     const { LEAD_ID, id, userid, firstname, lastname } = await req.json();
+
     const { PHONE_NO, EMAIL } = await LeadsForm.findOne({ LEAD_ID });
 
-    console.log("phone number and email fetceh are", PHONE_NO, "and", EMAIL);
+    console.log("phone number and email fetched are", PHONE_NO, "and", EMAIL);
 
     const student = await Student.create({
       id,
@@ -170,7 +171,6 @@ export const addStdFromLead = async (req) => {
       password: 1,
     });
 
-    // Check if user creation was successful
     if (!student) {
       return NextResponse.json(
         { message: "Something went wrong while adding student's details" },
@@ -178,9 +178,17 @@ export const addStdFromLead = async (req) => {
       );
     }
 
-    // Respond with success message
+    // Generate payment link URL
+    const paymentUrl = `https://sp.ilmulquran.com/student/invoice/${student.userid}/${student._id}`;
+
+    // Store payment link in PaymentLinks collection
+    await PaymentLinks.create({
+      FAMILY_ID: student.userid,
+      URL_LINK: paymentUrl,
+    });
+
     return NextResponse.json(
-      { message: "Student's details added successfully" },
+      { message: "Student's details and payment link added successfully" },
       { status: 201 }
     );
   } catch (error) {

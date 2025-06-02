@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/backups/store",
+      "methods": ["POST"],
+      "continue": true
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/backup",
+      "schedule": "0 0 * * *",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer ijazwakeelkhan"
+      }
+    }
+  ]
+}

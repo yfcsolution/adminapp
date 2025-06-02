@@ -10,10 +10,12 @@ import {
   FaChevronDown,
   FaCreditCard,
   FaFileInvoice,
+  FaDatabase,
 } from "react-icons/fa";
 import Link from "next/link";
 import DashboardLayout from "../../admin_dashboard_layout/layout";
 import { toast } from "react-toastify";
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("changePassword");
   const [openGroup, setOpenGroup] = useState(null);
@@ -85,6 +87,18 @@ export default function SettingsPage() {
           title: "Roles",
           tab: "roles",
           href: "/admin/settings/roles",
+        },
+      ],
+    },
+    {
+      name: "mongodb",
+      title: "MongoDB",
+      icon: <FaDatabase />,
+      items: [
+        {
+          title: "Backup",
+          tab: "mongodbBackup",
+          href: "/admin/settings/mongodb/backup",
         },
       ],
     },
@@ -182,6 +196,7 @@ export default function SettingsPage() {
             {activeTab === "paymentModes" && "Payment Modes"}
             {activeTab === "invoices" && "Invoice Management"}
             {activeTab === "roles" && "Manage User Roles"}
+            {activeTab === "mongodbBackup" && "MongoDB Backup"}
           </h2>
           <p className="text-teal-700">
             {activeTab === "changePassword" &&
@@ -198,6 +213,8 @@ export default function SettingsPage() {
               "Configure available payment methods and options."}
             {activeTab === "invoices" && "View and manage all invoice records."}
             {activeTab === "roles" && "Assign and manage user roles."}
+            {activeTab === "mongodbBackup" &&
+              "Manage your MongoDB database backups."}
           </p>
         </div>
       </div>

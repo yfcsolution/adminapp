@@ -15,7 +15,6 @@ function DashboardLayout({ children }) {
       const response = await axios.get("/api/admin-info", {
         withCredentials: true,
       });
-
       if (response.status !== 200) {
         router.push("/admin/login");
       }

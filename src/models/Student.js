@@ -126,6 +126,7 @@ const studentSchema = new mongoose.Schema(
     password: {
       type: String,
     },
+    
     new_pass_key: { type: String },
     new_pass_key_requested: { type: Date },
     email_verified_at: { type: Date },
