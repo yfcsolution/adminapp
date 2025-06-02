@@ -1,123 +1,159 @@
-// app/api/backup/route.ts
-import { exec } from 'child-process-promise';
-import fs from 'fs-extra';
-import path from 'path';
-import os from 'os';
-import { google } from 'googleapis';
-import { NextResponse } from 'next/server';
+import { exec } from "child-process-promise";
+import fs from "fs-extra";
+import path from "path";
+import os from "os";
+import { google } from "googleapis";
+import { NextResponse } from "next/server";
+
+const GOOGLE_SERVICE_ACCOUNT = {
+  type: "service_account",
+  project_id: "mongodb-backup-system",
+  private_key_id: "d30d685f6dab876b7da00b55763f1066ce13fb7c",
+  private_key: `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC0B23eD04MEE1x
+hWf0p6eF8L67xijIoxuEgG/dywTlnr0ZSzB6jyH4zc+JGf7a6NfLh2rfs3WirBdb
+Ew5b/UgKZoXPaD5exkYATji7geoJxTGEpnSJJfzFn/cek/EiiIDOXXtfIyUD1tNc
+VK0h5uKAX8bFVrRKAMEilra+SCHvQXYmGGBfkh5x+Uj+yV7V+Fb60BfoqwVJHgp/
+pxy9NRtyTqksNZuOkmLFdkAUEU64D/mtr9OU1eNhIcEecrLFRGRQG1rxunLO2npB
+bA7O0ANBsp4SrQZ7engneZErZqSzsvy93nWwM07zm5MLygO3vccIIdIkA0pNAaTv
+buD5vmCHAgMBAAECggEAKe4RCMdHxkeFwgrwS2tA+VE5G0Lr/M8AebvwUhgW6+Qs
+5tc8U09C+k/1JlmHojTZDe5cVf3WSC0Mw4mMrqAvRzzZrZT58dj8NNYDIKkBeYUU
+I3Ehc1AFr4GybMzIPOLOHUJomZ/13w8J61dNe7fqyTuFcDDhjNrgIM45gdgLD04r
+1eGiAxY/hNPfpccZyveCJi2OHYOpc/boMeBd38Lb900LgJUx0x0zP+oNc1+KPTXW
+Yjgmq7lilH6o0dioc+fglQY5XOb9X6EjGjx6FO9iMPkPyFzDlqKmhQXjV7kjQcxk
+sF9Yt+cRozGuaZdS3wf1IRxBm0R022QDS0klB48cAQKBgQDWuM/4Vs0NhV5IfZnb
+LfAxKR62iawDusIlOtUUKCA6UBaOgFNyMvxfDWD9ivYgcGSKJ+Wbni4RY5U1jrxv
+CXeIIoHv2h8mVpKQIPL/G624zVzY6E5heXz+qUkD6mRB3svPkNUIQxKsHiPo4aXm
+9KImNTz6UyLLPa45ALlL4V1ulwKBgQDWo0Ms62G8Nc5y7PJWzut7uloYu4uAWtS2
+92TSX+/rbb2xQIjDP20emhLjlcTQagQyeTPMBjfzCEMQYhGY2zDghgnhpdKsbQkT
+h4YjQ+GAHgIIw6blnyKNwiQRUbSmigp9MlYFdKUJtKyAYdxBay2JmBp3WrQ3rtd4
+BQqkYQfLkQKBgHVVIC/wHrTYwCCUodJnU+1JLwNIT7rp/tUhRPZyxsmWofzUmsS4
+n7fBM9LYcI5hXE8yZgGXekz+Qba2fLmgTrURRjeu1X65p/UiTCajFVb6wVW1+77A
+CFGQZ9m/53EnMfAGkKKnJDjxb2X+iA2geEqwpNWVQFoXJnD3uEmCqO+ZAoGBAJoB
+q0Gf4xDYyrlLqtb+wZiVre/xIbeHdPmTqZQJomya4XE9jOQLrpA2nTcPT5j7eOd+
+b9wE2kBXvUcUFuxG2ls/0fdGtFNkKQ8KPwUuv67d2TfQqwA3nuN4WcjTh3u3sK8E
+XxSrDYBZUy0LCq8l6BbCPLtHKeiKW7CSbYBk3uMBAoGBAIFs5i9eGMvZqi5Iy4Ja
+XDM0rOe7VEUxci8bn75UxMSZfJdUV5uUvTqR13emvbCwk1Xi1dz5Dg11MZijle+R
+4s059KL+8QTkDF3SBwHVwU2QSwtheLVYvj97JR4ZTdIIfc14tccixOy0bXUjYJ+N
+zST+ksFn10asob8IQPiS6x1r
+-----END PRIVATE KEY-----`,
+  client_email:
+    "mongo-backup-uploader@mongodb-backup-system.iam.gserviceaccount.com",
+  client_id: "113749446626218850405",
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url:
+    "https://www.googleapis.com/robot/v1/metadata/x509/mongo-backup-uploader%40mongodb-backup-system.iam.gserviceaccount.com",
+  universe_domain: "googleapis.com",
+};
 
 export async function POST(request) {
-  // 1. Authentication
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get("authorization");
   if (!authHeader || authHeader !== `Bearer ${process.env.BACKUP_SECRET}`) {
     return NextResponse.json(
-      { success: false, error: 'Unauthorized: Invalid or missing token' },
+      { success: false, error: "Unauthorized: Invalid or missing token" },
       { status: 401 }
     );
   }
 
-  // 2. Validate environment variables
-  if (!process.env.MONGO_URI || !process.env.GOOGLE_SERVICE_ACCOUNT || !process.env.GOOGLE_DRIVE_FOLDER_ID) {
+  if (!process.env.MONGO_URI || !process.env.GOOGLE_DRIVE_FOLDER_ID) {
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Server misconfigured: Missing required environment variables' 
+      {
+        success: false,
+        error: "Server misconfigured: Missing required environment variables",
       },
       { status: 500 }
     );
   }
 
-  let backupFile = '';
+  let backupFile = "";
   try {
-    // 3. Create secure temp directory
-    const tempDir = path.join(os.tmpdir(), 'mongodb-backups');
+    const tempDir = path.join(os.tmpdir(), "mongodb-backups");
     await fs.ensureDir(tempDir);
-    
-    // 4. Generate timestamped backup filename
-    const timestamp = new Date().toISOString()
-      .replace(/[:.]/g, '-')
-      .replace('T', '_');
+
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .replace("T", "_");
     backupFile = path.join(tempDir, `mongobackup-${timestamp}.gz`);
 
-    // 5. Execute mongodump with error handling
     console.log(`Starting MongoDB backup to: ${backupFile}`);
-    await exec(`mongodump --uri="${process.env.MONGO_URI}" --archive=${backupFile} --gzip`);
-    console.log('MongoDB backup completed successfully');
+    await exec(
+      `mongodump --uri="${process.env.MONGO_URI}" --archive=${backupFile} --gzip`
+    );
+    console.log("MongoDB backup completed successfully");
 
-    // 6. Authenticate with Google Drive
     const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT),
-      scopes: ['https://www.googleapis.com/auth/drive.file']
+      credentials: GOOGLE_SERVICE_ACCOUNT,
+      scopes: ["https://www.googleapis.com/auth/drive.file"],
     });
 
-    // 7. Upload to Google Drive
-    const drive = google.drive({ version: 'v3', auth });
-    console.log('Starting Google Drive upload...');
-    
+    const drive = google.drive({ version: "v3", auth });
+    console.log("Starting Google Drive upload...");
+
     const response = await drive.files.create({
       requestBody: {
         name: `mongobackup-${timestamp}.gz`,
         parents: [process.env.GOOGLE_DRIVE_FOLDER_ID],
-        description: `Automated MongoDB backup created on ${new Date().toISOString()}`
+        description: `Automated MongoDB backup created on ${new Date().toISOString()}`,
       },
       media: {
-        mimeType: 'application/gzip',
+        mimeType: "application/gzip",
         body: fs.createReadStream(backupFile),
       },
-      fields: 'id,name,webViewLink'
+      fields: "id,name,webViewLink",
     });
 
     console.log(`Upload successful. File ID: ${response.data.id}`);
 
-    // 8. Return success response
     return NextResponse.json({
       success: true,
       fileId: response.data.id,
       fileName: response.data.name,
       fileUrl: response.data.webViewLink,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
-    console.error('Backup process failed:', error);
+    console.error("Backup process failed:", error);
 
-    // Detailed error response
     const errorResponse = {
       success: false,
-      error: error.message || 'Unknown error occurred',
+      error: error.message || "Unknown error occurred",
       details: {
-        mongodbUri: process.env.MONGO_URI ? 'Configured' : 'Missing',
-        backupFile: backupFile || 'Not created',
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      }
+        mongodbUri: process.env.MONGO_URI ? "Configured" : "Missing",
+        backupFile: backupFile || "Not created",
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
     };
 
     return NextResponse.json(errorResponse, { status: 500 });
   } finally {
-    // 9. Cleanup: Delete temporary backup file if it exists
     if (backupFile && fs.existsSync(backupFile)) {
       try {
         await fs.unlink(backupFile);
-        console.log('Temporary backup file cleaned up');
+        console.log("Temporary backup file cleaned up");
       } catch (cleanupError) {
-        console.error('Failed to clean up backup file:', cleanupError);
+        console.error("Failed to clean up backup file:", cleanupError);
       }
     }
   }
 }
 
-// Explicitly handle unsupported methods
-export const GET = () => NextResponse.json(
-  { success: false, error: 'Method not allowed' },
-  { status: 405 }
-);
+export const GET = () =>
+  NextResponse.json(
+    { success: false, error: "Method not allowed" },
+    { status: 405 }
+  );
 
-export const PUT = () => NextResponse.json(
-  { success: false, error: 'Method not allowed' },
-  { status: 405 }
-);
+export const PUT = () =>
+  NextResponse.json(
+    { success: false, error: "Method not allowed" },
+    { status: 405 }
+  );
 
-export const DELETE = () => NextResponse.json(
-  { success: false, error: 'Method not allowed' },
-  { status: 405 }
-);
+export const DELETE = () =>
+  NextResponse.json(
+    { success: false, error: "Method not allowed" },
+    { status: 405 }
+  );
