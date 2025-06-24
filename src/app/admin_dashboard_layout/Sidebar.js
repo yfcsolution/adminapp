@@ -13,7 +13,7 @@ import {
   FaEdit,
   FaEnvelope,
   FaBlog,
-  FaCalendarAlt, // Icon for Class Schedule
+  FaCalendarAlt,
 } from "react-icons/fa";
 import { useAuth } from "../common/auth-context";
 
@@ -91,6 +91,14 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 </Link>
               </div>
             </li>
+
+            {/* New Baileys Link */}
+            <SidebarLink
+              href="/admin/baileys"
+              icon={<FaWhatsapp />}
+              label="Baileys"
+            />
+
             <SidebarLink
               href="/admin/blog/fetch"
               icon={<FaBlog />}
