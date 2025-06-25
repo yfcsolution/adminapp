@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaLock,
   FaKey,
@@ -11,10 +11,55 @@ import {
   FaCreditCard,
   FaFileInvoice,
   FaDatabase,
+  FaWhatsapp,
 } from "react-icons/fa";
 import Link from "next/link";
 import DashboardLayout from "../../admin_dashboard_layout/layout";
 import { toast } from "react-toastify";
+
+const ServerSwitcher = () => {
+  const [selected, setSelected] = useState("baileys");
+
+  useEffect(() => {
+    fetch("/api/server-config")
+      .then((res) => res.json())
+      .then((data) => setSelected(data.selectedServer));
+  }, []);
+
+  const updateSelection = async (newServer) => {
+    setSelected(newServer);
+    await fetch("/api/server-config", {
+      method: "POST",
+      body: JSON.stringify({ selectedServer: newServer }),
+    });
+    toast.success(`Switched to ${newServer} server`);
+  };
+
+  return (
+    <div className="space-x-4 mt-4">
+      <button
+        onClick={() => updateSelection("baileys")}
+        className={`px-4 py-2 rounded ${
+          selected === "baileys"
+            ? "bg-teal-600 text-white"
+            : "bg-gray-200 text-gray-800"
+        }`}
+      >
+        Baileys
+      </button>
+      <button
+        onClick={() => updateSelection("other")}
+        className={`px-4 py-2 rounded ${
+          selected === "other"
+            ? "bg-teal-600 text-white"
+            : "bg-gray-200 text-gray-800"
+        }`}
+      >
+        Other
+      </button>
+    </div>
+  );
+};
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("changePassword");
@@ -99,6 +144,18 @@ export default function SettingsPage() {
           title: "Backup",
           tab: "mongodbBackup",
           href: "/admin/settings/mongodb/backup",
+        },
+      ],
+    },
+    {
+      name: "whatsappServer",
+      title: "WhatsApp Server",
+      icon: <FaWhatsapp />,
+      items: [
+        {
+          title: "Switch Server",
+          tab: "switchWhatsappServer",
+          href: "#",
         },
       ],
     },
@@ -197,7 +254,7 @@ export default function SettingsPage() {
             {activeTab === "invoices" && "Invoice Management"}
             {activeTab === "roles" && "Manage User Roles"}
             {activeTab === "mongodbBackup" && "MongoDB Backup"}
-            {/* hello */}
+            {activeTab === "switchWhatsappServer" && "Switch WhatsApp Server"}
           </h2>
 
           <p className="text-teal-700">
@@ -217,7 +274,11 @@ export default function SettingsPage() {
             {activeTab === "roles" && "Assign and manage user roles."}
             {activeTab === "mongodbBackup" &&
               "Manage your MongoDB database backups."}
+            {activeTab === "switchWhatsappServer" &&
+              "Select the WhatsApp server to use for API operations."}
           </p>
+
+          {activeTab === "switchWhatsappServer" && <ServerSwitcher />}
         </div>
       </div>
     </DashboardLayout>
