@@ -2,9 +2,13 @@ import connectDB from "@/config/db";
 import Webhook from "@/models/whatsappWebhookSchema";
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { getCurrentServer } from "@/config/getCurrentServer";
+import mongoose from "mongoose";
 
 export async function POST(req) {
   await connectDB();
+  const server = await getCurrentServer();
+  console.log("Current Server Selected:", server);
 
   try {
     const { Id, message } = await req.json();
@@ -12,16 +16,16 @@ export async function POST(req) {
 
     // Check if conversationId is provided
     if (Id) {
-      const existingConversation = await Webhook.findOne({ _id: Id });
+      const existingConversation = await Webhook.findOne({
+        _id: new mongoose.Types.ObjectId(Id),
+      });
 
       if (existingConversation) {
-        // Get the last message in the conversation
         const lastMessage =
           existingConversation.conversation[
             existingConversation.conversation.length - 1
           ];
 
-        // Determine sender and receiver based on the isReply flag
         const sender = lastMessage?.isReply
           ? lastMessage.sender
           : lastMessage.receiver;
@@ -29,7 +33,6 @@ export async function POST(req) {
           ? lastMessage.receiver
           : lastMessage.sender;
 
-        // Assign appKey based on sender
         if (
           sender === "447862067920" ||
           sender === "be4f69af-d825-4e7f-a029-2a68c5f732c9"
@@ -63,21 +66,39 @@ export async function POST(req) {
       return NextResponse.json({ error: "Id is required" }, { status: 400 });
     }
 
-    // WhatsApp message payload
-    const messageData = {
-      appkey: appKey,
-      authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
-      to: receiver,
-      message,
-    };
+    // ✅ Select message payload and API endpoint
+    let response;
+    if (server === "baileys") {
+      const baileysPayload = {
+        account: appKey,
+        number: receiver,
+        message,
+      };
+      console.log("Baileys Payload:", baileysPayload);
 
-    // Send WhatsApp message request
-    const response = await axios.post(
-      "https://waserver.pro/api/create-message",
-      messageData
-    );
+      response = await axios.post(
+        "https://baileys-vpc9.onrender.com/send-message",
+        baileysPayload
+      );
 
-    // If the WhatsApp message is sent successfully, store/update data in the Webhook table
+      console.log("Message sent via Baileys:", response.data);
+    } else {
+      const messageData = {
+        appkey: appKey,
+        authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
+        to: receiver,
+        message,
+      };
+
+      response = await axios.post(
+        "https://waserver.pro/api/create-message",
+        messageData
+      );
+
+      console.log("Message sent via Default Server:", response.data);
+    }
+
+    // ✅ Save to DB if message sent successfully
     if (response.status === 200) {
       const newMessage = {
         text: message,
@@ -87,13 +108,13 @@ export async function POST(req) {
         createdAt: new Date(),
       };
 
-      // Update or create webhook with the new message
       const webhookEntry = await Webhook.findOneAndUpdate(
         { _id: Id },
         { $push: { conversation: newMessage } },
         { new: true }
       );
-      // Call the sendToOracle method
+
+      // ✅ Send to Oracle
       const synced = await webhookEntry.sendToOracle();
       if (synced) {
         console.log("Data synced to Oracle successfully.");

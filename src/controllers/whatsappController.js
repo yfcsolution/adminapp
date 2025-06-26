@@ -3,7 +3,7 @@ import LeadsForm from "@/models/LeadsForm";
 import { NextResponse } from "next/server";
 import axios from "axios";
 import Webhook from "@/models/whatsappWebhookSchema";
-
+import { getCurrentServer } from "@/config/getCurrentServer";
 export const handleWhatsappMessage = async (req) => {
   try {
     // Extract template_id and userid from request body
@@ -14,7 +14,6 @@ export const handleWhatsappMessage = async (req) => {
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
     // Extract mobile number from user data
     const number = user.phonenumber;
 
@@ -133,22 +132,22 @@ export const handleWhatsappMessageLeads = async (req) => {
   }
 };
 
-
-
 /********************************  handle lead cutom whatsapp messages  *****************************/
 
 export const handleLeadsCustomMessages = async (req) => {
+  const server = await getCurrentServer();
+  console.log("Current Server Selected:", server);
+
   try {
-    // Extract data from the request body
     const { message, appkey, lead_id, receiver, family_id, conversationId } =
       await req.json();
 
     let number;
     let familyId = null;
 
-    // Check if receiver is provided
+    // Resolve number
     if (receiver) {
-      number = receiver; // Use the receiver directly
+      number = receiver;
       familyId = family_id;
       console.log("Receiver provided directly:", number);
     } else if (family_id) {
@@ -160,102 +159,101 @@ export const handleLeadsCustomMessages = async (req) => {
           { status: 404 }
         );
       }
-
-      // Extract mobile number and familyId from user data
       number = family.phonenumber;
-      console.log("Number fetched from student table:", number);
+      console.log("Number from Student:", number);
     } else {
-      // Retrieve user details based on lead_id
       const user = await LeadsForm.findOne({ LEAD_ID: lead_id });
-
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
-
-      // Extract mobile number and familyId from user data
       number = user.PHONE_NO;
-      console.log("Number fetched from LeadsForm:", number);
+      console.log("Number from LeadsForm:", number);
 
-      // Check for familyId in the Student model
       const student = await Student.findOne({ phonenumber: number });
       if (student) {
         familyId = student.userid;
-        console.log("Family ID fetched from Student:", familyId);
+        console.log("Family ID from Student:", familyId);
       }
     }
 
-    // WhatsApp message payload
-    const messageData = {
-      appkey: appkey,
-      authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
-      to: number,
-      message: message,
-    };
-
-    // Send WhatsApp message request
-    const response = await axios.post(
-      "https://waserver.pro/api/create-message",
-      messageData
-    );
-
-    let webhookEntry;
-
-    // If the WhatsApp message is sent successfully, store/update data in the Webhook table
-    if (response.status === 200) {
-      const newMessage = {
-        text: message,
-        isReply: true,
-        sender: appkey,
-        receiver: number,
-        createdAt: new Date(),
+    // ✅ Send the message based on selected server
+    let response;
+    if (server === "baileys") {
+      const baileysPayload = {
+        account: appkey,
+        number: number,
+        message: message,
       };
 
-      if (familyId) {
-        // Update or create webhook using familyId and push new message to conversation
-        webhookEntry = await Webhook.findOneAndUpdate(
-          { familyId: familyId },
-          { $push: { conversation: newMessage } },
-          { upsert: true, new: true }
-        );
-        console.log("Webhook updated/created with familyId:", webhookEntry);
-      } else if (lead_id) {
-        // Update or create webhook using leadId and push new message to conversation
-        webhookEntry = await Webhook.findOneAndUpdate(
-          { leadId: lead_id },
-          { $push: { conversation: newMessage } },
-          { upsert: true, new: true }
-        );
-        console.log("Webhook updated/created with leadId:", webhookEntry);
-      } else if (conversationId) {
-        // Update or create webhook using conversationId and push new message to conversation
-        webhookEntry = await Webhook.findOneAndUpdate(
-          { conversationId },
-          { $push: { conversation: newMessage } },
-          { upsert: true, new: true }
-        );
-        console.log(
-          "Webhook updated/created with conversationId:",
-          webhookEntry
-        );
-      } else {
-        // Create a new webhook entry with the new message
-        webhookEntry = new Webhook({
-          leadId: lead_id,
-          receiver: number,
-          conversation: [newMessage],
-          appkey: appkey,
-        });
-        await webhookEntry.save();
-      }
+      response = await axios.post(
+        "https://baileys-vpc9.onrender.com/send-message",
+        baileysPayload
+      );
 
-      // Call the sendToOracle method
-      if (webhookEntry) {
-        const oracleResponse = await webhookEntry.sendToOracle();
-        console.log("Oracle Response:", oracleResponse);
-      }
+      console.log("Sent via Baileys:", response.data);
+    } else {
+      const messageData = {
+        appkey: appkey,
+        authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
+        to: number,
+        message: message,
+      };
+
+      response = await axios.post(
+        "https://waserver.pro/api/create-message",
+        messageData
+      );
+
+      console.log("Sent via Default Server:", response.data);
     }
 
-    // Successful response from WhatsApp API
+    // ✅ Common webhook + DB save + Oracle logic
+    let webhookEntry;
+    const newMessage = {
+      text: message,
+      isReply: true,
+      sender: appkey,
+      receiver: number,
+      createdAt: new Date(),
+    };
+
+    if (familyId) {
+      webhookEntry = await Webhook.findOneAndUpdate(
+        { familyId },
+        { $push: { conversation: newMessage } },
+        { upsert: true, new: true }
+      );
+      console.log("Webhook saved (familyId):", webhookEntry);
+    } else if (lead_id) {
+      webhookEntry = await Webhook.findOneAndUpdate(
+        { leadId: lead_id },
+        { $push: { conversation: newMessage } },
+        { upsert: true, new: true }
+      );
+      console.log("Webhook saved (leadId):", webhookEntry);
+    } else if (conversationId) {
+      webhookEntry = await Webhook.findOneAndUpdate(
+        { conversationId },
+        { $push: { conversation: newMessage } },
+        { upsert: true, new: true }
+      );
+      console.log("Webhook saved (conversationId):", webhookEntry);
+    } else {
+      webhookEntry = new Webhook({
+        leadId: lead_id,
+        receiver: number,
+        conversation: [newMessage],
+        appkey: appkey,
+      });
+      await webhookEntry.save();
+      console.log("New Webhook saved");
+    }
+
+    if (webhookEntry) {
+      const oracleResponse = await webhookEntry.sendToOracle();
+      console.log("Oracle Response:", oracleResponse);
+    }
+
     return NextResponse.json(
       {
         message: "WhatsApp custom message sent successfully",
@@ -271,7 +269,7 @@ export const handleLeadsCustomMessages = async (req) => {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error in sending custom messages:", error);
+    console.error("Error:", error);
 
     if (error.response) {
       return NextResponse.json(
