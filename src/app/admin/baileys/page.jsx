@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiSend, FiRefreshCw, FiCheck, FiX, FiUser, FiPhone, FiMessageSquare, FiWifi, FiPlus } from 'react-icons/fi';
+import { FiSend, FiRefreshCw, FiCheck, FiX, FiUser, FiPhone, FiMessageSquare, FiWifi, FiPlus, FiTrash2 } from 'react-icons/fi';
 import DashboardLayout from "../../admin_dashboard_layout/layout"
 
 export default function WhatsAppDashboard() {
@@ -15,6 +15,8 @@ export default function WhatsAppDashboard() {
   const [qrData, setQrData] = useState({});
   const [newAccount, setNewAccount] = useState({ name: '', appKey: '' });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deletingAccounts, setDeletingAccounts] = useState({});
+  const [eventSource, setEventSource] = useState(null);
 
   // Fetch accounts from backend
   const fetchAccounts = async () => {
@@ -28,47 +30,50 @@ export default function WhatsAppDashboard() {
 
   // Setup connection to SSE
   useEffect(() => {
-    const eventSource = new EventSource('https://baileys-r2cr.onrender.com/events');
-    
-    eventSource.addEventListener('status', (event) => {
-      const data = JSON.parse(event.data);
-      setAccounts(prev => prev.map(acc => 
-        acc.appKey === data.appKey ? { ...acc, status: data.status } : acc
-      ));
-    });
-    
-    eventSource.addEventListener('qr', (event) => {
-      const data = JSON.parse(event.data);
-      setQrData(prev => ({ ...prev, [data.appKey]: data.qr }));
-      setConnectingAccounts(prev => ({ ...prev, [data.appKey]: true }));
-    });
-    
-    eventSource.addEventListener('connected', (event) => {
-      const data = JSON.parse(event.data);
-      setQrData(prev => ({ ...prev, [data.appKey]: null }));
-      setConnectingAccounts(prev => ({ ...prev, [data.appKey]: false }));
-      setAccounts(prev => prev.map(acc => 
-        acc.appKey === data.appKey ? { ...acc, status: 'connected', phoneNumber: data.phoneNumber } : acc
-      ));
-    });
-    
-    eventSource.onerror = (error) => {
-      console.error('SSE error:', error);
-      setTimeout(() => {
-        eventSource.close();
-        const newEventSource = new EventSource('https://baileys-r2cr.onrender.com/events');
-        // Reattach event listeners
-        newEventSource.addEventListener('status', eventSource.onstatus);
-        newEventSource.addEventListener('qr', eventSource.onqr);
-        newEventSource.addEventListener('connected', eventSource.onconnected);
-      }, 5000);
+    const setupEventSource = () => {
+      const es = new EventSource('https://baileys-r2cr.onrender.com/events');
+      
+      es.addEventListener('status', (event) => {
+        const data = JSON.parse(event.data);
+        setAccounts(prev => prev.map(acc => 
+          acc.appKey === data.appKey ? { ...acc, status: data.status } : acc
+        ));
+      });
+      
+      es.addEventListener('qr', (event) => {
+        const data = JSON.parse(event.data);
+        setQrData(prev => ({ ...prev, [data.appKey]: data.qr }));
+        setConnectingAccounts(prev => ({ ...prev, [data.appKey]: true }));
+      });
+      
+      es.addEventListener('connected', (event) => {
+        const data = JSON.parse(event.data);
+        setQrData(prev => ({ ...prev, [data.appKey]: null }));
+        setConnectingAccounts(prev => ({ ...prev, [data.appKey]: false }));
+        setAccounts(prev => prev.map(acc => 
+          acc.appKey === data.appKey 
+            ? { ...acc, status: 'connected', phoneNumber: data.phoneNumber } 
+            : acc
+        ));
+      });
+      
+      es.onerror = (error) => {
+        console.error('SSE error:', error);
+        es.close();
+        setTimeout(setupEventSource, 5000);
+      };
+      
+      setEventSource(es);
+      return es;
     };
+
+    const es = setupEventSource();
     
     // Initial fetch
     fetchAccounts();
     
     return () => {
-      eventSource.close();
+      if (es) es.close();
     };
   }, []);
 
@@ -80,6 +85,31 @@ export default function WhatsAppDashboard() {
     } catch (error) {
       console.error(`Error connecting ${appKey}:`, error);
       setConnectingAccounts(prev => ({ ...prev, [appKey]: false }));
+    }
+  };
+
+  // Delete auth data for account
+  const deleteAuthData = async (appKey) => {
+    if (!window.confirm('Are you sure you want to delete the authentication data for this account? You will need to scan the QR code again.')) {
+      return;
+    }
+
+    try {
+      setDeletingAccounts(prev => ({ ...prev, [appKey]: true }));
+      await axios.delete(`https://baileys-r2cr.onrender.com/auth/${appKey}`);
+      
+      setAccounts(prev => prev.map(acc => 
+        acc.appKey === appKey ? { ...acc, status: 'disconnected' } : acc
+      ));
+      
+      if (selectedAccount === appKey) {
+        setSelectedAccount(null);
+      }
+    } catch (error) {
+      console.error(`Error deleting auth data for ${appKey}:`, error);
+      alert(`Failed to delete auth data: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setDeletingAccounts(prev => ({ ...prev, [appKey]: false }));
     }
   };
 
@@ -308,7 +338,7 @@ export default function WhatsAppDashboard() {
                     )}
                   </div>
                   
-                  <div className="bg-gray-50 px-4 py-2">
+                  <div className="bg-gray-50 px-4 py-2 flex">
                     <button
                       onClick={() => {
                         if (account.status === 'connected') {
@@ -317,7 +347,7 @@ export default function WhatsAppDashboard() {
                         }
                       }}
                       disabled={account.status !== 'connected'}
-                      className={`w-full py-2 rounded-md text-xs font-medium transition ${
+                      className={`flex-1 py-2 rounded-md text-xs font-medium transition ${
                         selectedAccount === account.appKey
                           ? 'bg-teal-600 text-white'
                           : account.status === 'connected'
@@ -331,13 +361,30 @@ export default function WhatsAppDashboard() {
                           ? 'Select Account'
                           : 'Not Connected'}
                     </button>
+                    
+                    <button
+                      onClick={() => deleteAuthData(account.appKey)}
+                      disabled={deletingAccounts[account.appKey]}
+                      className={`ml-2 px-3 py-2 rounded-md text-xs font-medium transition ${
+                        deletingAccounts[account.appKey]
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                          : 'bg-white border border-red-500 text-red-600 hover:bg-red-50'
+                      }`}
+                      title="Delete authentication data"
+                    >
+                      {deletingAccounts[account.appKey] ? (
+                        <FiRefreshCw className="animate-spin" />
+                      ) : (
+                        <FiTrash2 />
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Send Message Section - Only show when account is selected */}
+          {/* Send Message Section */}
           {selectedAccount && (
             <section className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 border border-gray-100">
               <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
