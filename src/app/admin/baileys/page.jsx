@@ -19,7 +19,7 @@ export default function WhatsAppDashboard() {
   // Fetch accounts from backend
   const fetchAccounts = async () => {
     try {
-      const response = await axios.get('https://baileys-vpc9.onrender.com/accounts');
+      const response = await axios.get('https://baileys-r2cr.onrender.com/accounts');
       setAccounts(response.data);
     } catch (error) {
       console.error('Failed to fetch accounts:', error);
@@ -28,7 +28,7 @@ export default function WhatsAppDashboard() {
 
   // Setup connection to SSE
   useEffect(() => {
-    const eventSource = new EventSource('https://baileys-vpc9.onrender.com/events');
+    const eventSource = new EventSource('https://baileys-r2cr.onrender.com/events');
     
     eventSource.addEventListener('status', (event) => {
       const data = JSON.parse(event.data);
@@ -56,7 +56,7 @@ export default function WhatsAppDashboard() {
       console.error('SSE error:', error);
       setTimeout(() => {
         eventSource.close();
-        const newEventSource = new EventSource('https://baileys-vpc9.onrender.com/events');
+        const newEventSource = new EventSource('https://baileys-r2cr.onrender.com/events');
         // Reattach event listeners
         newEventSource.addEventListener('status', eventSource.onstatus);
         newEventSource.addEventListener('qr', eventSource.onqr);
@@ -76,7 +76,7 @@ export default function WhatsAppDashboard() {
   const connectAccount = async (appKey) => {
     try {
       setConnectingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`https://baileys-vpc9.onrender.com/connect/${appKey}`);
+      await axios.post(`https://baileys-r2cr.onrender.com/connect/${appKey}`);
     } catch (error) {
       console.error(`Error connecting ${appKey}:`, error);
       setConnectingAccounts(prev => ({ ...prev, [appKey]: false }));
@@ -99,7 +99,7 @@ export default function WhatsAppDashboard() {
     setSendStatus(null);
 
     try {
-      const response = await axios.post('https://baileys-vpc9.onrender.com/send-message', {
+      const response = await axios.post('https://baileys-r2cr.onrender.com/send-message', {
         account: selectedAccount,
         number,
         message
@@ -129,7 +129,7 @@ export default function WhatsAppDashboard() {
     }
 
     try {
-      const response = await axios.post('https://baileys-vpc9.onrender.com/accounts', {
+      const response = await axios.post('https://baileys-r2cr.onrender.com/accounts', {
         name: newAccount.name,
         appKey: newAccount.appKey
       });
