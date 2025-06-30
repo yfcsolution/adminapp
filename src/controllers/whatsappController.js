@@ -186,7 +186,7 @@ export const handleLeadsCustomMessages = async (req) => {
       };
 
       response = await axios.post(
-        "https://baileys-vpc9.onrender.com/send-message",
+        "https://baileys-r2cr.onrender.com/send-message",
         baileysPayload
       );
 
