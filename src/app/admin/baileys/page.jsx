@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiSend, FiRefreshCw, FiCheck, FiX, FiUser, FiPhone, FiMessageSquare, FiWifi, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { MdLinkOff } from 'react-icons/md';
+
 import DashboardLayout from "../../admin_dashboard_layout/layout"
 
 export default function WhatsAppDashboard() {
@@ -90,13 +92,13 @@ export default function WhatsAppDashboard() {
 
   // Delete auth data for account
   const deleteAuthData = async (appKey) => {
-    if (!window.confirm('Are you sure you want to delete the authentication data for this account? You will need to scan the QR code again.')) {
+    if (!window.confirm('Are you sure you want to disconnect this account? You will need to scan the QR code again.')) {
       return;
     }
 
     try {
       setDeletingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.delete(`https://baileys-r2cr.onrender.com/auth/${appKey}`);
+      await axios.post(`https://baileys-r2cr.onrender.com/disconnect/${appKey}`);
       
       setAccounts(prev => prev.map(acc => 
         acc.appKey === appKey ? { ...acc, status: 'disconnected' } : acc
@@ -106,8 +108,8 @@ export default function WhatsAppDashboard() {
         setSelectedAccount(null);
       }
     } catch (error) {
-      console.error(`Error deleting auth data for ${appKey}:`, error);
-      alert(`Failed to delete auth data: ${error.response?.data?.error || error.message}`);
+      console.error(`Error disconnecting account for ${appKey}:`, error);
+      alert(`Failed to disconnect: ${error.response?.data?.error || error.message}`);
     } finally {
       setDeletingAccounts(prev => ({ ...prev, [appKey]: false }));
     }
@@ -370,12 +372,12 @@ export default function WhatsAppDashboard() {
                           ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                           : 'bg-white border border-red-500 text-red-600 hover:bg-red-50'
                       }`}
-                      title="Delete authentication data"
+                      title="Disconnect this account?"
                     >
                       {deletingAccounts[account.appKey] ? (
                         <FiRefreshCw className="animate-spin" />
                       ) : (
-                        <FiTrash2 />
+                        <MdLinkOff />
                       )}
                     </button>
                   </div>
@@ -385,95 +387,115 @@ export default function WhatsAppDashboard() {
           </section>
 
           {/* Send Message Section */}
-          {selectedAccount && (
-            <section className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <FiSend className="mr-2 text-teal-600" /> Send Message
-              </h2>
-              
-              <div className="mb-5">
-                <div className="flex items-center">
-                  <div className="mr-3 w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
-                    <span className="font-bold text-teal-700 text-xs">{selectedAccount}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-800 truncate">
-                      {accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount}
-                    </p>
-                    <p className="text-xs text-teal-600">
-                      Status: Connected
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-4 mb-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <FiPhone className="mr-2 text-teal-600" /> Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    value={number}
-                    onChange={(e) => setNumber(e.target.value)}
-                    placeholder="e.g., 15551234567"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Include country code without spaces or special characters
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <FiMessageSquare className="mr-2 text-teal-600" /> Message
-                  </label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows="3"
-                    placeholder="Type your message here..."
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0">
-                  {sendStatus && (
-                    <div className={`flex items-center text-sm ${
-                      sendStatus.success ? 'text-teal-600' : 'text-red-600'
-                    }`}>
-                      {sendStatus.success ? (
-                        <>
-                          <FiCheck className="mr-1" />
-                          <span className="truncate">{sendStatus.message}</span>
-                        </>
-                      ) : (
-                        <>
-                          <FiX className="mr-1" />
-                          <span className="truncate">{sendStatus.error}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                <button
-                  onClick={sendMessage}
-                  disabled={isSending}
-                  className={`flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-white shadow transition min-w-[140px] ${
-                    isSending
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
-                  }`}
-                >
-                  <FiSend className="mr-2 text-sm" />
-                  {isSending ? 'Sending...' : 'Send Message'}
-                </button>
-              </div>
-            </section>
-          )}
+{selectedAccount && (
+  <section className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 border border-gray-100">
+    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+      <FiSend className="mr-2 text-teal-600" /> Send Message
+    </h2>
+    
+    {/* Account Info */}
+    <div className="mb-5">
+      <div className="flex items-center">
+        <div className="mr-3 flex-shrink-0 relative group">
+          <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
+            <span 
+              className="font-bold text-teal-700 text-xs truncate px-1"
+              title={accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount}
+            >
+              {(() => {
+                const name = accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount;
+                return name.length > 5 ? `${name.substring(0, 5)}...` : name;
+              })()}
+            </span>
+          </div>
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+            {accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount}
+          </div>
+        </div>
+        
+        <div className="min-w-0">
+          <p 
+            className="font-medium text-gray-800 truncate"
+            title={selectedAccount}
+          >
+            {selectedAccount}
+          </p>
+          <p className="text-xs text-teal-600">
+            Status: Connected
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    {/* Form Fields */}
+    <div className="grid grid-cols-1 gap-4 mb-5">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+          <FiPhone className="mr-2 text-teal-600" /> Phone Number
+        </label>
+        <input
+          type="text"
+          value={number}
+          onChange={(e) => setNumber(e.target.value)}
+          placeholder="e.g., 15551234567"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Include country code without spaces or special characters
+        </p>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+          <FiMessageSquare className="mr-2 text-teal-600" /> Message
+        </label>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows="3"
+          placeholder="Type your message here..."
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+        />
+      </div>
+    </div>
+    
+    {/* Status and Submit */}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="min-w-0">
+        {sendStatus && (
+          <div className={`flex items-center text-sm ${
+            sendStatus.success ? 'text-teal-600' : 'text-red-600'
+          }`}>
+            {sendStatus.success ? (
+              <>
+                <FiCheck className="mr-1" />
+                <span className="truncate">{sendStatus.message}</span>
+              </>
+            ) : (
+              <>
+                <FiX className="mr-1" />
+                <span className="truncate">{sendStatus.error}</span>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      
+      <button
+        onClick={sendMessage}
+        disabled={isSending}
+        className={`flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-white shadow transition min-w-[140px] ${
+          isSending
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
+        }`}
+      >
+        <FiSend className="mr-2 text-sm" />
+        {isSending ? 'Sending...' : 'Send Message'}
+      </button>
+    </div>
+  </section>
+)}
           
           {accounts.length === 0 && !showAddForm && (
             <div className="text-center py-12">
