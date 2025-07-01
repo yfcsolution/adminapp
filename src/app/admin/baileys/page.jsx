@@ -23,7 +23,7 @@ export default function WhatsAppDashboard() {
   // Fetch accounts from backend
   const fetchAccounts = async () => {
     try {
-      const response = await axios.get('https://baileys-r2cr.onrender.com/accounts');
+      const response = await axios.get('http://localhost:3001/accounts');
       setAccounts(response.data);
     } catch (error) {
       console.error('Failed to fetch accounts:', error);
@@ -33,7 +33,7 @@ export default function WhatsAppDashboard() {
   // Setup connection to SSE
   useEffect(() => {
     const setupEventSource = () => {
-      const es = new EventSource('https://baileys-r2cr.onrender.com/events');
+      const es = new EventSource('http://localhost:3001/events');
       
       es.addEventListener('status', (event) => {
         const data = JSON.parse(event.data);
@@ -83,7 +83,7 @@ export default function WhatsAppDashboard() {
   const connectAccount = async (appKey) => {
     try {
       setConnectingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`https://baileys-r2cr.onrender.com/connect/${appKey}`);
+      await axios.post(`http://localhost:3001/connect/${appKey}`);
     } catch (error) {
       console.error(`Error connecting ${appKey}:`, error);
       setConnectingAccounts(prev => ({ ...prev, [appKey]: false }));
@@ -98,7 +98,7 @@ export default function WhatsAppDashboard() {
 
     try {
       setDeletingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`https://baileys-r2cr.onrender.com/disconnect/${appKey}`);
+      await axios.post(`http://localhost:3001/disconnect/${appKey}`);
       
       setAccounts(prev => prev.map(acc => 
         acc.appKey === appKey ? { ...acc, status: 'disconnected' } : acc
@@ -131,7 +131,7 @@ export default function WhatsAppDashboard() {
     setSendStatus(null);
 
     try {
-      const response = await axios.post('https://baileys-r2cr.onrender.com/send-message', {
+      const response = await axios.post('http://localhost:3001/send-message', {
         account: selectedAccount,
         number,
         message
@@ -161,7 +161,7 @@ export default function WhatsAppDashboard() {
     }
 
     try {
-      const response = await axios.post('https://baileys-r2cr.onrender.com/accounts', {
+      const response = await axios.post('http://localhost:3001/accounts', {
         name: newAccount.name,
         appKey: newAccount.appKey
       });
