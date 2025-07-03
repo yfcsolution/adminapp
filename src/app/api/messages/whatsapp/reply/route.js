@@ -19,7 +19,6 @@ export async function POST(req) {
       const existingConversation = await Webhook.findOne({
         _id: new mongoose.Types.ObjectId(Id),
       });
-
       if (existingConversation) {
         const lastMessage =
           existingConversation.conversation[
@@ -77,7 +76,10 @@ export async function POST(req) {
       console.log("Baileys Payload:", baileysPayload);
 
       // Updated to use Vercel proxy endpoint
-      response = await axios.post("/api/whatsapp/send-message", baileysPayload);
+      response = await axios.post(
+        "http://45.76.132.90:3001/send-message",
+        baileysPayload
+      );
 
       console.log("Message sent via Baileys:", response.data);
     } else {

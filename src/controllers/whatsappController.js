@@ -186,7 +186,7 @@ export const handleLeadsCustomMessages = async (req) => {
       };
 
       // Updated to use the Vercel proxy endpoint
-      response = await axios.post("/api/whatsapp/send-message", baileysPayload);
+      response = await axios.post("http://45.76.132.90:3001/send-message", baileysPayload);
 
       console.log("Sent via Baileys:", response.data);
     } else {
