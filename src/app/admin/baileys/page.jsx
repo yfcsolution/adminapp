@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FiSend, FiRefreshCw, FiCheck, FiX, FiUser, FiPhone, FiMessageSquare, FiWifi, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { 
+  FiSend, FiRefreshCw, FiCheck, FiX, FiUser, FiPhone, 
+  FiMessageSquare, FiWifi, FiPlus, FiTrash2, FiImage, 
+  FiMic, FiPaperclip, FiSmile 
+} from 'react-icons/fi';
 import { MdLinkOff } from 'react-icons/md';
-
 import DashboardLayout from "../../admin_dashboard_layout/layout"
-
 export default function WhatsAppDashboard() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -19,21 +21,28 @@ export default function WhatsAppDashboard() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [deletingAccounts, setDeletingAccounts] = useState({});
   const [eventSource, setEventSource] = useState(null);
+  const [mediaType, setMediaType] = useState(null);
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const mediaInputRef = useRef(null);
+  const recorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   // Fetch accounts from backend
   const fetchAccounts = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/accounts');
+      const response = await axios.get('http://45.76.132.90:3001/accounts');
       setAccounts(response.data);
     } catch (error) {
       console.error('Failed to fetch accounts:', error);
     }
   };
-
   // Setup connection to SSE
   useEffect(() => {
     const setupEventSource = () => {
-      const es = new EventSource('http://localhost:3001/events');
+      const es = new EventSource('http://45.76.132.90:3001/events');
       
       es.addEventListener('status', (event) => {
         const data = JSON.parse(event.data);
@@ -83,7 +92,7 @@ export default function WhatsAppDashboard() {
   const connectAccount = async (appKey) => {
     try {
       setConnectingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`http://localhost:3001/connect/${appKey}`);
+      await axios.post(`http://45.76.132.90:3001/connect/${appKey}`);
     } catch (error) {
       console.error(`Error connecting ${appKey}:`, error);
       setConnectingAccounts(prev => ({ ...prev, [appKey]: false }));
@@ -98,7 +107,7 @@ export default function WhatsAppDashboard() {
 
     try {
       setDeletingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`http://localhost:3001/disconnect/${appKey}`);
+      await axios.post(`http://45.76.132.90:3001/disconnect/${appKey}`);
       
       setAccounts(prev => prev.map(acc => 
         acc.appKey === appKey ? { ...acc, status: 'disconnected' } : acc
@@ -115,6 +124,80 @@ export default function WhatsAppDashboard() {
     }
   };
 
+  // Handle media selection
+  const handleMediaSelect = (type) => {
+    setMediaType(type);
+    mediaInputRef.current.click();
+  };
+
+  // Process selected file
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setMediaFile(file);
+
+    // Create preview for images and videos
+    if (mediaType === 'image' || mediaType === 'sticker') {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setMediaPreview(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else if (mediaType === 'video') {
+      const videoUrl = URL.createObjectURL(file);
+      setMediaPreview(videoUrl);
+    }
+  };
+
+  // Start voice recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      
+      recorderRef.current.ondataavailable = (e) => {
+        audioChunksRef.current.push(e.data);
+      };
+      
+      recorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/ogg; codecs=opus' });
+        const audioFile = new File([audioBlob], 'voice_message.ogg', { type: 'audio/ogg' });
+        setMediaFile(audioFile);
+        setMediaType('voice');
+        
+        // Create preview
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setMediaPreview(audioUrl);
+      };
+      
+      recorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setSendStatus({ success: false, error: 'Microphone access denied' });
+    }
+  };
+  // Stop voice recording
+  const stopRecording = () => {
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      recorderRef.current.stop();
+      recorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+    }
+  };
+
+  // Remove media
+  const removeMedia = () => {
+    setMediaFile(null);
+    setMediaPreview(null);
+    setMediaType(null);
+    if (mediaInputRef.current) {
+      mediaInputRef.current.value = '';
+    }
+  };
+
   // Send message
   const sendMessage = async () => {
     if (!selectedAccount) {
@@ -122,8 +205,8 @@ export default function WhatsAppDashboard() {
       return;
     }
     
-    if (!number || !message) {
-      setSendStatus({ success: false, error: 'Number and message are required' });
+    if (!number || (!message && !mediaFile)) {
+      setSendStatus({ success: false, error: 'Number and message or media are required' });
       return;
     }
 
@@ -131,11 +214,37 @@ export default function WhatsAppDashboard() {
     setSendStatus(null);
 
     try {
-      const response = await axios.post('http://localhost:3001/send-message', {
-        account: selectedAccount,
-        number,
-        message
-      });
+      let response;
+      
+      if (mediaFile) {
+        // Read file as base64
+        const reader = new FileReader();
+        reader.readAsDataURL(mediaFile);
+        
+        await new Promise((resolve) => {
+          reader.onload = async () => {
+            const base64Data = reader.result.split(',')[1];
+            
+            response = await axios.post('http://45.76.132.90:3001/send-message', {
+              account: selectedAccount,
+              number,
+              message,
+              media: {
+                data: base64Data,
+                filename: mediaFile.name,
+                type: mediaType
+              }
+            });
+            resolve();
+          };
+        });
+      } else {
+        response = await axios.post('http://45.76.132.90:3001/send-message', {
+          account: selectedAccount,
+          number,
+          message
+        });
+      }
       
       setSendStatus({ 
         success: true, 
@@ -143,6 +252,12 @@ export default function WhatsAppDashboard() {
       });
       
       setMessage('');
+      setMediaFile(null);
+      setMediaPreview(null);
+      setMediaType(null);
+      if (mediaInputRef.current) {
+        mediaInputRef.current.value = '';
+      }
     } catch (error) {
       setSendStatus({ 
         success: false, 
@@ -161,7 +276,7 @@ export default function WhatsAppDashboard() {
     }
 
     try {
-      const response = await axios.post('http://localhost:3001/accounts', {
+      const response = await axios.post('http://45.76.132.90:3001/accounts', {
         name: newAccount.name,
         appKey: newAccount.appKey
       });
@@ -387,115 +502,211 @@ export default function WhatsAppDashboard() {
           </section>
 
           {/* Send Message Section */}
-{selectedAccount && (
-  <section className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 border border-gray-100">
-    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-      <FiSend className="mr-2 text-teal-600" /> Send Message
-    </h2>
-    
-    {/* Account Info */}
-    <div className="mb-5">
-      <div className="flex items-center">
-        <div className="mr-3 flex-shrink-0 relative group">
-          <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
-            <span 
-              className="font-bold text-teal-700 text-xs truncate px-1"
-              title={accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount}
-            >
-              {(() => {
-                const name = accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount;
-                return name.length > 5 ? `${name.substring(0, 5)}...` : name;
-              })()}
-            </span>
-          </div>
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-            {accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount}
-          </div>
-        </div>
-        
-        <div className="min-w-0">
-          <p 
-            className="font-medium text-gray-800 truncate"
-            title={selectedAccount}
-          >
-            {selectedAccount}
-          </p>
-          <p className="text-xs text-teal-600">
-            Status: Connected
-          </p>
-        </div>
-      </div>
-    </div>
-    
-    {/* Form Fields */}
-    <div className="grid grid-cols-1 gap-4 mb-5">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-          <FiPhone className="mr-2 text-teal-600" /> Phone Number
-        </label>
-        <input
-          type="text"
-          value={number}
-          onChange={(e) => setNumber(e.target.value)}
-          placeholder="e.g., 15551234567"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Include country code without spaces or special characters
-        </p>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-          <FiMessageSquare className="mr-2 text-teal-600" /> Message
-        </label>
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          rows="3"
-          placeholder="Type your message here..."
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-        />
-      </div>
-    </div>
-    
-    {/* Status and Submit */}
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div className="min-w-0">
-        {sendStatus && (
-          <div className={`flex items-center text-sm ${
-            sendStatus.success ? 'text-teal-600' : 'text-red-600'
-          }`}>
-            {sendStatus.success ? (
-              <>
-                <FiCheck className="mr-1" />
-                <span className="truncate">{sendStatus.message}</span>
-              </>
-            ) : (
-              <>
-                <FiX className="mr-1" />
-                <span className="truncate">{sendStatus.error}</span>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-      
-      <button
-        onClick={sendMessage}
-        disabled={isSending}
-        className={`flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-white shadow transition min-w-[140px] ${
-          isSending
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
-        }`}
-      >
-        <FiSend className="mr-2 text-sm" />
-        {isSending ? 'Sending...' : 'Send Message'}
-      </button>
-    </div>
-  </section>
-)}
+          {selectedAccount && (
+            <section className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 border border-gray-100">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <FiSend className="mr-2 text-teal-600" /> Send Message
+              </h2>
+              
+              {/* Account Info */}
+              <div className="mb-5">
+                <div className="flex items-center">
+                  <div className="mr-3 flex-shrink-0 relative group">
+                    <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
+                      <span 
+                        className="font-bold text-teal-700 text-xs truncate px-1"
+                        title={accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount}
+                      >
+                        {(() => {
+                          const name = accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount;
+                          return name.length > 5 ? `${name.substring(0, 5)}...` : name;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                      {accounts.find(a => a.appKey === selectedAccount)?.name || selectedAccount}
+                    </div>
+                  </div>
+                  
+                  <div className="min-w-0">
+                    <p 
+                      className="font-medium text-gray-800 truncate"
+                      title={selectedAccount}
+                    >
+                      {selectedAccount}
+                    </p>
+                    <p className="text-xs text-teal-600">
+                      Status: Connected
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Form Fields */}
+              <div className="grid grid-cols-1 gap-4 mb-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                    <FiPhone className="mr-2 text-teal-600" /> Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    value={number}
+                    onChange={(e) => setNumber(e.target.value)}
+                    placeholder="e.g., 15551234567"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Include country code without spaces or special characters
+                  </p>
+                </div>
+                
+                {/* Media Preview */}
+                {mediaPreview && (
+                  <div className="relative border border-gray-200 rounded-lg p-2">
+                    {mediaType === 'image' || mediaType === 'sticker' ? (
+                      <img 
+                        src={mediaPreview} 
+                        alt="Preview" 
+                        className="max-h-40 mx-auto rounded" 
+                      />
+                    ) : mediaType === 'video' ? (
+                      <video 
+                        src={mediaPreview} 
+                        controls 
+                        className="max-h-40 mx-auto rounded"
+                      />
+                    ) : mediaType === 'voice' ? (
+                      <div className="flex items-center justify-center p-4">
+                        <audio 
+                          src={mediaPreview} 
+                          controls 
+                          className="w-full"
+                        />
+                      </div>
+                    ) : null}
+                    
+                    <button
+                      onClick={removeMedia}
+                      className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
+                      title="Remove media"
+                    >
+                      <FiX className="text-red-500" />
+                    </button>
+                    
+                    {mediaType && (
+                      <span className="absolute top-2 left-2 bg-white rounded-full px-2 py-1 text-xs font-medium shadow-md">
+                        {mediaType.charAt(0).toUpperCase() + mediaType.slice(1)}
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                    <FiMessageSquare className="mr-2 text-teal-600" /> Message
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      rows="3"
+                      placeholder="Type your message here..."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 pr-10"
+                    />
+                    
+                    {/* Media Attachment Buttons */}
+                    <div className="absolute right-2 bottom-2 flex space-x-1">
+                      <button
+                        onClick={() => handleMediaSelect('image')}
+                        className="p-1 text-gray-500 hover:text-teal-600 rounded-full hover:bg-gray-100"
+                        title="Attach image"
+                      >
+                        <FiImage />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleMediaSelect('document')}
+                        className="p-1 text-gray-500 hover:text-teal-600 rounded-full hover:bg-gray-100"
+                        title="Attach document"
+                      >
+                        <FiPaperclip />
+                      </button>
+                      
+                      <button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={`p-1 rounded-full hover:bg-gray-100 ${
+                          isRecording 
+                            ? 'text-red-500 animate-pulse' 
+                            : 'text-gray-500 hover:text-teal-600'
+                        }`}
+                        title={isRecording ? 'Stop recording' : 'Record voice message'}
+                      >
+                        <FiMic />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleMediaSelect('sticker')}
+                        className="p-1 text-gray-500 hover:text-teal-600 rounded-full hover:bg-gray-100"
+                        title="Send sticker"
+                      >
+                        <FiSmile />
+                      </button>
+                    </div>
+                    
+                    {/* Hidden file input */}
+                    <input
+                      type="file"
+                      ref={mediaInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept={
+                        mediaType === 'image' ? 'image/*' : 
+                        mediaType === 'video' ? 'video/*' : 
+                        mediaType === 'document' ? '*' : 
+                        mediaType === 'sticker' ? 'image/*' : ''
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Status and Submit */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  {sendStatus && (
+                    <div className={`flex items-center text-sm ${
+                      sendStatus.success ? 'text-teal-600' : 'text-red-600'
+                    }`}>
+                      {sendStatus.success ? (
+                        <>
+                          <FiCheck className="mr-1" />
+                          <span className="truncate">{sendStatus.message}</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiX className="mr-1" />
+                          <span className="truncate">{sendStatus.error}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={sendMessage}
+                  disabled={isSending || (!message && !mediaFile)}
+                  className={`flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-white shadow transition min-w-[140px] ${
+                    isSending || (!message && !mediaFile)
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
+                  }`}
+                >
+                  <FiSend className="mr-2 text-sm" />
+                  {isSending ? 'Sending...' : 'Send Message'}
+                </button>
+              </div>
+            </section>
+          )}
           
           {accounts.length === 0 && !showAddForm && (
             <div className="text-center py-12">
