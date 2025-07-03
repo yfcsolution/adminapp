@@ -76,10 +76,8 @@ export async function POST(req) {
       };
       console.log("Baileys Payload:", baileysPayload);
 
-      response = await axios.post(
-        "https://baileys-r2cr.onrender.com/send-message",
-        baileysPayload
-      );
+      // Updated to use Vercel proxy endpoint
+      response = await axios.post("/api/whatsapp/send-message", baileysPayload);
 
       console.log("Message sent via Baileys:", response.data);
     } else {
