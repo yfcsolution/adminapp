@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/whatsapp/accounts",
+      "destination": "http://45.76.132.90:3001/accounts"
+    },
+    {
+      "source": "/api/whatsapp/connect/:appKey",
+      "destination": "http://45.76.132.90:3001/connect/:appKey"
+    },
+    {
+      "source": "/api/whatsapp/disconnect/:appKey",
+      "destination": "http://45.76.132.90:3001/disconnect/:appKey"
+    },
+    {
+      "source": "/api/whatsapp/send-message",
+      "destination": "http://45.76.132.90:3001/send-message"
+    },
+    {
+      "source": "/api/whatsapp/events",
+      "destination": "http://45.76.132.90:3001/events"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fi';
 import { MdLinkOff } from 'react-icons/md';
 import DashboardLayout from "../../admin_dashboard_layout/layout"
+
 export default function WhatsAppDashboard() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -30,19 +31,18 @@ export default function WhatsAppDashboard() {
   const recorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // Fetch accounts from backend
   const fetchAccounts = async () => {
     try {
-      const response = await axios.get('http://45.76.132.90:3001/accounts');
+      const response = await axios.get('/api/whatsapp/accounts');
       setAccounts(response.data);
     } catch (error) {
       console.error('Failed to fetch accounts:', error);
     }
   };
-  // Setup connection to SSE
+
   useEffect(() => {
     const setupEventSource = () => {
-      const es = new EventSource('http://45.76.132.90:3001/events');
+      const es = new EventSource('/api/whatsapp/events');
       
       es.addEventListener('status', (event) => {
         const data = JSON.parse(event.data);
@@ -79,8 +79,6 @@ export default function WhatsAppDashboard() {
     };
 
     const es = setupEventSource();
-    
-    // Initial fetch
     fetchAccounts();
     
     return () => {
@@ -88,18 +86,16 @@ export default function WhatsAppDashboard() {
     };
   }, []);
 
-  // Connect account handler
   const connectAccount = async (appKey) => {
     try {
       setConnectingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`http://45.76.132.90:3001/connect/${appKey}`);
+      await axios.post(`/api/whatsapp/connect/${appKey}`);
     } catch (error) {
       console.error(`Error connecting ${appKey}:`, error);
       setConnectingAccounts(prev => ({ ...prev, [appKey]: false }));
     }
   };
 
-  // Delete auth data for account
   const deleteAuthData = async (appKey) => {
     if (!window.confirm('Are you sure you want to disconnect this account? You will need to scan the QR code again.')) {
       return;
@@ -107,7 +103,7 @@ export default function WhatsAppDashboard() {
 
     try {
       setDeletingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`http://45.76.132.90:3001/disconnect/${appKey}`);
+      await axios.post(`/api/whatsapp/disconnect/${appKey}`);
       
       setAccounts(prev => prev.map(acc => 
         acc.appKey === appKey ? { ...acc, status: 'disconnected' } : acc
@@ -124,20 +120,17 @@ export default function WhatsAppDashboard() {
     }
   };
 
-  // Handle media selection
   const handleMediaSelect = (type) => {
     setMediaType(type);
     mediaInputRef.current.click();
   };
 
-  // Process selected file
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setMediaFile(file);
 
-    // Create preview for images and videos
     if (mediaType === 'image' || mediaType === 'sticker') {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -150,7 +143,6 @@ export default function WhatsAppDashboard() {
     }
   };
 
-  // Start voice recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -166,8 +158,6 @@ export default function WhatsAppDashboard() {
         const audioFile = new File([audioBlob], 'voice_message.ogg', { type: 'audio/ogg' });
         setMediaFile(audioFile);
         setMediaType('voice');
-        
-        // Create preview
         const audioUrl = URL.createObjectURL(audioBlob);
         setMediaPreview(audioUrl);
       };
@@ -179,7 +169,7 @@ export default function WhatsAppDashboard() {
       setSendStatus({ success: false, error: 'Microphone access denied' });
     }
   };
-  // Stop voice recording
+
   const stopRecording = () => {
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
       recorderRef.current.stop();
@@ -188,7 +178,6 @@ export default function WhatsAppDashboard() {
     }
   };
 
-  // Remove media
   const removeMedia = () => {
     setMediaFile(null);
     setMediaPreview(null);
@@ -198,7 +187,6 @@ export default function WhatsAppDashboard() {
     }
   };
 
-  // Send message
   const sendMessage = async () => {
     if (!selectedAccount) {
       setSendStatus({ success: false, error: 'Please select an account' });
@@ -217,7 +205,6 @@ export default function WhatsAppDashboard() {
       let response;
       
       if (mediaFile) {
-        // Read file as base64
         const reader = new FileReader();
         reader.readAsDataURL(mediaFile);
         
@@ -225,7 +212,7 @@ export default function WhatsAppDashboard() {
           reader.onload = async () => {
             const base64Data = reader.result.split(',')[1];
             
-            response = await axios.post('http://45.76.132.90:3001/send-message', {
+            response = await axios.post('/api/whatsapp/send-message', {
               account: selectedAccount,
               number,
               message,
@@ -239,7 +226,7 @@ export default function WhatsAppDashboard() {
           };
         });
       } else {
-        response = await axios.post('http://45.76.132.90:3001/send-message', {
+        response = await axios.post('/api/whatsapp/send-message', {
           account: selectedAccount,
           number,
           message
@@ -252,12 +239,7 @@ export default function WhatsAppDashboard() {
       });
       
       setMessage('');
-      setMediaFile(null);
-      setMediaPreview(null);
-      setMediaType(null);
-      if (mediaInputRef.current) {
-        mediaInputRef.current.value = '';
-      }
+      removeMedia();
     } catch (error) {
       setSendStatus({ 
         success: false, 
@@ -268,7 +250,6 @@ export default function WhatsAppDashboard() {
     }
   };
 
-  // Add new account
   const addAccount = async () => {
     if (!newAccount.name || !newAccount.appKey) {
       alert('Name and App Key are required');
@@ -276,7 +257,7 @@ export default function WhatsAppDashboard() {
     }
 
     try {
-      const response = await axios.post('http://45.76.132.90:3001/accounts', {
+      const response = await axios.post('/api/whatsapp/accounts', {
         name: newAccount.name,
         appKey: newAccount.appKey
       });
@@ -290,7 +271,6 @@ export default function WhatsAppDashboard() {
     }
   };
 
-  // Refresh accounts manually
   const refreshAccounts = async () => {
     await fetchAccounts();
     setSendStatus(null);
@@ -309,7 +289,6 @@ export default function WhatsAppDashboard() {
             </p>
           </header>
 
-          {/* Account Cards */}
           <section className="mb-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
               <h2 className="text-xl md:text-2xl font-semibold text-gray-800 flex items-center">
@@ -333,7 +312,6 @@ export default function WhatsAppDashboard() {
               </div>
             </div>
 
-            {/* Add Account Form */}
             {showAddForm && (
               <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 border border-gray-100">
                 <h3 className="text-lg font-medium text-gray-800 mb-3">Add New WhatsApp Account</h3>
@@ -501,14 +479,12 @@ export default function WhatsAppDashboard() {
             </div>
           </section>
 
-          {/* Send Message Section */}
           {selectedAccount && (
             <section className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 border border-gray-100">
               <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <FiSend className="mr-2 text-teal-600" /> Send Message
               </h2>
               
-              {/* Account Info */}
               <div className="mb-5">
                 <div className="flex items-center">
                   <div className="mr-3 flex-shrink-0 relative group">
@@ -542,7 +518,6 @@ export default function WhatsAppDashboard() {
                 </div>
               </div>
               
-              {/* Form Fields */}
               <div className="grid grid-cols-1 gap-4 mb-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
@@ -560,7 +535,6 @@ export default function WhatsAppDashboard() {
                   </p>
                 </div>
                 
-                {/* Media Preview */}
                 {mediaPreview && (
                   <div className="relative border border-gray-200 rounded-lg p-2">
                     {mediaType === 'image' || mediaType === 'sticker' ? (
@@ -614,7 +588,6 @@ export default function WhatsAppDashboard() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 pr-10"
                     />
                     
-                    {/* Media Attachment Buttons */}
                     <div className="absolute right-2 bottom-2 flex space-x-1">
                       <button
                         onClick={() => handleMediaSelect('image')}
@@ -653,7 +626,6 @@ export default function WhatsAppDashboard() {
                       </button>
                     </div>
                     
-                    {/* Hidden file input */}
                     <input
                       type="file"
                       ref={mediaInputRef}
@@ -670,7 +642,6 @@ export default function WhatsAppDashboard() {
                 </div>
               </div>
               
-              {/* Status and Submit */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="min-w-0">
                   {sendStatus && (
