@@ -1,11 +1,9 @@
 "use client"; // Mark this component as a client component
-
 import "./globals.css";
 import { AuthProvider } from "./common/auth-context";
 import { ToastProvider } from "@/components/ToastProvider";
 import { useEffect } from "react"; // Import useEffect
 import axios from "axios"; // Import axios
-
 export default function RootLayout({ children }) {
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -15,11 +13,9 @@ export default function RootLayout({ children }) {
         console.error("Error in cron job request:", error);
       });
     }, 120000);
-
     // Cleanup function to clear the interval when the component unmounts
     return () => clearInterval(intervalId);
   }, []);
-
   useEffect(() => {
     // Function to fetch data every 15 minutes
     const fetchData = async () => {
@@ -36,10 +32,8 @@ export default function RootLayout({ children }) {
 
     // Fetch data immediately on mount
     fetchData();
-
     // Set interval to call fetchData every 15 minutes (900,000ms)
     const intervalId = setInterval(fetchData, 900000);
-
     // Cleanup on component unmount
     return () => clearInterval(intervalId);
   }, []);
