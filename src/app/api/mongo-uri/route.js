@@ -8,9 +8,9 @@ export async function GET(req) {
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     console.log("Ip is", ip)
 
-    // if (ip !== allowedIP) {
-    //   return NextResponse.json({ error: "Unauthorized IP" }, { status: 403 });
-    // }
+    if (ip !== allowedIP) {
+      return NextResponse.json({ error: "Unauthorized IP" }, { status: 403 });
+    }
 
     const MONGO_URI = process.env.MONGO_URI;
 
