@@ -33,7 +33,7 @@ export default function WhatsAppDashboard() {
 
   const fetchAccounts = async () => {
     try {
-      const response = await axios.get('http://45.76.132.90:3001/accounts');
+      const response = await axios.get('/api/whatsapp/accounts');
       setAccounts(response.data);
     } catch (error) {
       console.error('Failed to fetch accounts:', error);
@@ -42,7 +42,7 @@ export default function WhatsAppDashboard() {
 
   useEffect(() => {
     const setupEventSource = () => {
-      const es = new EventSource('http://45.76.132.90:3001/events');
+      const es = new EventSource('/api/whatsapp/events');
       
       es.addEventListener('status', (event) => {
         const data = JSON.parse(event.data);
@@ -89,7 +89,7 @@ export default function WhatsAppDashboard() {
   const connectAccount = async (appKey) => {
     try {
       setConnectingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`http://45.76.132.90:3001/connect/${appKey}`);
+      await axios.post(`/api/whatsapp/connect/${appKey}`);
     } catch (error) {
       console.error(`Error connecting ${appKey}:`, error);
       setConnectingAccounts(prev => ({ ...prev, [appKey]: false }));
@@ -103,7 +103,7 @@ export default function WhatsAppDashboard() {
 
     try {
       setDeletingAccounts(prev => ({ ...prev, [appKey]: true }));
-      await axios.post(`http://45.76.132.90:3001/disconnect/${appKey}`);
+      await axios.post(`/api/whatsapp/disconnect/${appKey}`);
       
       setAccounts(prev => prev.map(acc => 
         acc.appKey === appKey ? { ...acc, status: 'disconnected' } : acc
@@ -212,7 +212,7 @@ export default function WhatsAppDashboard() {
           reader.onload = async () => {
             const base64Data = reader.result.split(',')[1];
             
-            response = await axios.post('http://45.76.132.90:3001/send-message', {
+            response = await axios.post('/api/whatsapp/send-message', {
               account: selectedAccount,
               number,
               message,
@@ -226,7 +226,7 @@ export default function WhatsAppDashboard() {
           };
         });
       } else {
-        response = await axios.post('http://45.76.132.90:3001/send-message', {
+        response = await axios.post('/api/whatsapp/send-message', {
           account: selectedAccount,
           number,
           message
@@ -257,7 +257,7 @@ export default function WhatsAppDashboard() {
     }
 
     try {
-      const response = await axios.post('http://45.76.132.90:3001/accounts', {
+      const response = await axios.post('/api/whatsapp/accounts', {
         name: newAccount.name,
         appKey: newAccount.appKey
       });
