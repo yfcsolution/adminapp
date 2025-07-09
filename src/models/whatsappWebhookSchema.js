@@ -94,7 +94,6 @@ webhookSchema.methods.sendToOracle = async function () {
       "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/whatsapp/insert/",
       data
     );
-
     if (response.status === 200) {
       console.log("Data successfully sent to Oracle API.");
       this.syncedToOracle = true;

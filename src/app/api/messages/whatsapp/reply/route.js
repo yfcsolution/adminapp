@@ -77,7 +77,7 @@ export async function POST(req) {
 
       // Updated to use Vercel proxy endpoint
       response = await axios.post(
-        "http://45.76.132.90:3001/send-message",
+        "https://wa.yourfuturecampus.com/send-message",
         baileysPayload
       );
 

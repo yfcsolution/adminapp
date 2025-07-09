@@ -187,7 +187,7 @@ export const handleLeadsCustomMessages = async (req) => {
 
       // Updated to use the Vercel proxy endpoint
       response = await axios.post(
-        "http://45.76.132.90:3001/send-message",
+        "https://wa.yourfuturecampus.com/send-message",
         baileysPayload
       );
 
