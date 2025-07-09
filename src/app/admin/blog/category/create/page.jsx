@@ -3,7 +3,6 @@ import { useState } from "react";
 import DashboardLayout from "../../../../admin_dashboard_layout/layout";
 import axios from "axios";
 import { toast } from "react-toastify";
-
 export default function CreateCategory() {
   const [category, setCategory] = useState("");
 
