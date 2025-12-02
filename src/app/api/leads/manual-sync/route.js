@@ -45,7 +45,7 @@ export async function POST(req) {
     };
     // Send the lead data to the Oracle endpoint
     const response = await axios.post(
-      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads/insertleads",
+      "https://sss.yourfuturecampus.com:8090/apeks/apps/erp/YfcLeads/insertleads",
       leadData,
       {
         headers: {
