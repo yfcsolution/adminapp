@@ -2,18 +2,42 @@ import { NextResponse } from "next/server";
 
 export async function GET(req) {
   try {
-    const allowedIP = process.env.allowedIP; // Add your IP to .env.local
-    console.log("allowed ip is",allowedIP)
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    console.log("Ip is", ip)
+    // Read allowed IPs (comma separated)
+    const allowedIPs = (process.env.ALLOWED_IPS || "")
+      .split(",")
+      .map((ip) => ip.trim())
+      .filter((ip) => ip.length > 0);
 
-    if (ip !== allowedIP) {
-      return NextResponse.json({ error: "Unauthorized IP" }, { status: 403 });
+    // Identify requester IP (Vercel special handling)
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const realIP = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : req.headers.get("x-real-ip") ||
+        req.headers.get("cf-connecting-ip") ||
+        "unknown";
+
+    console.log("Incoming request IP:", realIP);
+    console.log("Allowed IPs:", allowedIPs);
+
+    // Allow localhost by default
+    const defaultAllowed = ["127.0.0.1", "localhost"];
+
+    const isAllowed =
+      allowedIPs.includes(realIP) || defaultAllowed.includes(realIP);
+
+    if (!isAllowed) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized IP",
+          yourIP: realIP,
+          allowed: allowedIPs,
+        },
+        { status: 403 }
+      );
     }
 
+    // Fetch Mongo URI
     const MONGO_URI = process.env.MONGO_URI;
-
     if (!MONGO_URI) {
       return NextResponse.json(
         { error: "MONGO_URI is not defined" },
