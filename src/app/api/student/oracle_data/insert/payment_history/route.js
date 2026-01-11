@@ -11,7 +11,7 @@ export async function POST(req) {
 
     // Fetch data from the external API
     const response = await axios.get(
-      `https://sss.yourfuturecampus.com:8443/apeks/apps/erp/paymenthistory/getdata?P_USER_ID=${userid}`
+      `${ERP_BASE_URL}/yfc_erp/paymenthistory/getdata?P_USER_ID=${userid}`
     );
 
     const data = response.data.items; // Ensure this path is correct based on the API response structure

@@ -66,7 +66,7 @@ export async function POST(req) {
 
     // Send the data to the Oracle API
     const response = await axios.post(
-      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/waconversations/insert/",
+      "${ERP_BASE_URL}/yfc_erp/waconversations/insert/",
       data,
       {
         headers: {

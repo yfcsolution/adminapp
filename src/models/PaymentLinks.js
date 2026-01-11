@@ -20,7 +20,7 @@ const PaymentLinksSchema = new mongoose.Schema(
 PaymentLinksSchema.post("save", async function (doc) {
   try {
     await axios.post(
-      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/family_paymentlink/postdata",
+      "${ERP_BASE_URL}/yfc_erp/family_paymentlink/postdata",
       {
         FAMILY_ID: doc.FAMILY_ID,
         URL_LINK: doc.URL_LINK,
