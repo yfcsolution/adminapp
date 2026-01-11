@@ -1,8 +1,13 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 
-// Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.STRIPE_SECRETE_KEY);
+// Lazy initialization of Stripe to avoid build-time errors
+function getStripe() {
+  if (!process.env.STRIPE_SECRETE_KEY) {
+    throw new Error("Stripe key missing at runtime");
+  }
+  return new Stripe(process.env.STRIPE_SECRETE_KEY);
+}
 
 // Disable Next.js body parser so we can handle raw body
 export const config = {
@@ -27,6 +32,7 @@ export const POST = async (req) => {
 
   try {
     // Verify the webhook signature to make sure it's from Stripe
+    const stripe = getStripe();
     event = stripe.webhooks.constructEvent(reqBody, sig, endpointSecret);
   } catch (err) {
     console.error("Webhook error:", err.message);

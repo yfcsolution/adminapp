@@ -1,8 +1,13 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 
-// Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.STRIPE_SECRETE_KEY);
+// Lazy initialization of Stripe to avoid build-time errors
+function getStripe() {
+  if (!process.env.STRIPE_SECRETE_KEY) {
+    throw new Error("Stripe key missing at runtime");
+  }
+  return new Stripe(process.env.STRIPE_SECRETE_KEY);
+}
 
 export const handleStripeOrders = async (req) => {
   try {
@@ -40,6 +45,7 @@ export const handleStripeOrders = async (req) => {
     ];
 
     // Create a Stripe checkout session
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"], // Allow card payments
       line_items: line_items, // Set the line items created above
@@ -77,6 +83,7 @@ export const getStripePaymentDetails = async (req) => {
     const { sessionId } = await req.json();
 
     // Retrieve the Stripe Checkout session using the session ID
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     // Check if the session was found
@@ -134,6 +141,7 @@ export const handleStripeOrdersAdmin = async (req) => {
     ];
 
     // Create a Stripe checkout session
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"], // Allow card payments
       line_items: line_items, // Set the line items created above

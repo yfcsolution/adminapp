@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { handleStripeOrdersAdmin } from "@/controllers/stripeController";
 import connectDB from "@/config/db";
 
