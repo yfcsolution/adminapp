@@ -2,6 +2,7 @@ import axios from "axios";
 import connectDB from "@/config/db";
 import Student from "@/models/Student";
 import { NextResponse } from "next/server";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 // Helper function to format a date to DD-MMM-YYYY
 const formatToDD_MMM_YYYY = (date) => {
@@ -44,7 +45,7 @@ export async function POST(req) {
 
     // Fetch data from the external API
     const response = await axios.get(
-      `${ERP_BASE_URL}/yfc_erp/classhistory/getdata?P_USER_ID=${userid}&P_STUDENT_ID=${studentId}&P_FROM_DATE=${currentDate}&P_TO_DATE=${oneMonthAgo}`
+      `${ERP_BASE_URL}/erp/classhistory/getdata?P_USER_ID=${userid}&P_STUDENT_ID=${studentId}&P_FROM_DATE=${currentDate}&P_TO_DATE=${oneMonthAgo}`
     );
 
     const data = response.data.items; // Ensure this path is correct based on the API response structure

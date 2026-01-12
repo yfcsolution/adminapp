@@ -6,6 +6,7 @@ import axios from "axios";
 import Webhook from "@/models/whatsappWebhookSchema";
 import DuplicateLeads from "@/models/DuplicateLeads";
 import LeadsStatus from "@/models/LeadsStatus";
+import ERP_BASE_URL from "@/config/erpUrl";
 export const handleLeadsSubmit = async (req) => {
   const {
     LEAD_IP,
@@ -499,7 +500,7 @@ export const handleLeadsAdditionalData = async (req) => {
 
     // Send data to the external API
     const response = await fetch(
-      "${ERP_BASE_URL}/yfc_erp/addstudent/postdata",
+      `${ERP_BASE_URL}/erp/addstudent/postdata`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

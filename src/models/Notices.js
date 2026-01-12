@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import axios from "axios";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 const NoticesSchema = new mongoose.Schema(
   {
@@ -55,7 +56,7 @@ NoticesSchema.methods.syncToExternalAPI = async function (
     };
 
     const response = await axios.post(
-      "${ERP_BASE_URL}/yfc_erp/notes/postdata",
+      `${ERP_BASE_URL}/erp/notes/postdata`,
       payload
     );
 

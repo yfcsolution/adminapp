@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP API Testing Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        .test-card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-card button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        .test-card button:hover {
+            background: #5568d3;
+        }
+        .test-card button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .config {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .config label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        .config input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .summary {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        .summary h2 {
+            color: #2196F3;
+            margin-bottom: 15px;
+        }
+        .summary-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .stat {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .stat.passed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .stat.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .stat.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .run-all {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .run-all:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 ERP API Testing Tool</h1>
+        <p class="subtitle">Test external ERP API at erp.yourfuturecampus.com</p>
+        
+        <div class="config">
+            <label>ERP Base URL:</label>
+            <input type="text" id="erpUrl" value="https://erp.yourfuturecampus.com/ords" readonly>
+            <button class="run-all" onclick="runAllTests()">🚀 Run All Tests</button>
+        </div>
+
+        <div class="test-grid">
+            <!-- Test 1: Connectivity -->
+            <div class="test-card">
+                <h2>🌐 1. Base URL Connectivity</h2>
+                <p>Test if ERP base URL is accessible</p>
+                <button onclick="testConnectivity()">Test Connectivity</button>
+                <div id="connectivityResult" class="result"></div>
+            </div>
+
+            <!-- Test 2: Leads Insert -->
+            <div class="test-card">
+                <h2>📝 2. Leads Insert</h2>
+                <p>Test inserting a lead into ERP</p>
+                <button onclick="testLeadsInsert()">Test Leads Insert</button>
+                <div id="leadsResult" class="result"></div>
+            </div>
+
+            <!-- Test 3: Payment Links -->
+            <div class="test-card">
+                <h2>💳 3. Payment Links</h2>
+                <p>Test payment link submission</p>
+                <button onclick="testPaymentLinks()">Test Payment Links</button>
+                <div id="paymentResult" class="result"></div>
+            </div>
+
+            <!-- Test 4: Class History -->
+            <div class="test-card">
+                <h2>📚 4. Class History</h2>
+                <p>Test retrieving class history</p>
+                <button onclick="testClassHistory()">Test Class History</button>
+                <div id="classHistoryResult" class="result"></div>
+            </div>
+
+            <!-- Test 5: Class Schedule -->
+            <div class="test-card">
+                <h2>📅 5. Class Schedule</h2>
+                <p>Test retrieving class schedule</p>
+                <button onclick="testClassSchedule()">Test Class Schedule</button>
+                <div id="classScheduleResult" class="result"></div>
+            </div>
+
+            <!-- Test 6: Invoice Info -->
+            <div class="test-card">
+                <h2>🧾 6. Invoice Info</h2>
+                <p>Test retrieving invoice information</p>
+                <button onclick="testInvoiceInfo()">Test Invoice Info</button>
+                <div id="invoiceResult" class="result"></div>
+            </div>
+
+            <!-- Test 7: Payment History -->
+            <div class="test-card">
+                <h2>💰 7. Payment History</h2>
+                <p>Test retrieving payment history</p>
+                <button onclick="testPaymentHistory()">Test Payment History</button>
+                <div id="paymentHistoryResult" class="result"></div>
+            </div>
+
+            <!-- Test 8: Notes -->
+            <div class="test-card">
+                <h2>📝 8. Notes</h2>
+                <p>Test submitting notes</p>
+                <button onclick="testNotes()">Test Notes</button>
+                <div id="notesResult" class="result"></div>
+            </div>
+
+            <!-- Test 9: WhatsApp -->
+            <div class="test-card">
+                <h2>💬 9. WhatsApp Conversations</h2>
+                <p>Test WhatsApp conversation insert</p>
+                <button onclick="testWhatsApp()">Test WhatsApp</button>
+                <div id="whatsappResult" class="result"></div>
+            </div>
+
+            <!-- Test 10: Response Time -->
+            <div class="test-card">
+                <h2>⏱️ 10. Response Time</h2>
+                <p>Test API response time</p>
+                <button onclick="testResponseTime()">Test Response Time</button>
+                <div id="responseTimeResult" class="result"></div>
+            </div>
+        </div>
+
+        <div class="summary">
+            <h2>📊 Test Summary</h2>
+            <div class="summary-stats">
+                <div class="stat passed" id="passedCount">✅ Passed: 0</div>
+                <div class="stat failed" id="failedCount">❌ Failed: 0</div>
+                <div class="stat warning" id="warningCount">⚠️ Warnings: 0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const erpUrl = () => document.getElementById('erpUrl').value;
+        let testStats = { passed: 0, failed: 0, warnings: 0 };
+
+        function updateStats() {
+            document.getElementById('passedCount').textContent = `✅ Passed: ${testStats.passed}`;
+            document.getElementById('failedCount').textContent = `❌ Failed: ${testStats.failed}`;
+            document.getElementById('warningCount').textContent = `⚠️ Warnings: ${testStats.warnings}`;
+        }
+
+        function showResult(elementId, data, isSuccess, isWarning = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isSuccess ? 'success' : isWarning ? 'info' : 'error'}`;
+            element.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+            
+            if (isSuccess) testStats.passed++;
+            else if (isWarning) testStats.warnings++;
+            else testStats.failed++;
+            updateStats();
+        }
+
+        async function testConnectivity() {
+            try {
+                const response = await fetch(erpUrl(), { method: 'GET', mode: 'no-cors' });
+                showResult('connectivityResult', {
+                    status: 'Accessible',
+                    url: erpUrl(),
+                    note: 'CORS may prevent full check, but URL is reachable'
+                }, true, true);
+            } catch (error) {
+                showResult('connectivityResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testLeadsInsert() {
+            const testData = {
+                LEAD_ID: `TEST_${Date.now()}`,
+                FULL_NAME: 'Test User API',
+                EMAIL: 'test@example.com',
+                PHONE_NO: '1234567890',
+                REMARKS: 'Automated API Test',
+                COUNTRY: 'US',
+                TIME_ZONE: 'America/New_York',
+                CURRENCY: 'USD',
+                STATE: 'NY',
+                LEAD_IP: '127.0.0.1',
+                REQUEST_FORM: 'API_TEST',
+                WHATSAPP_STATUS: 'N'
+            };
+
+            try {
+                const response = await fetch(`${erpUrl()}/erp/YfcLeads/insertleads`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                const data = await response.text();
+                try {
+                    const jsonData = JSON.parse(data);
+                    showResult('leadsResult', {
+                        status: response.status,
+                        data: jsonData
+                    }, response.ok);
+                } catch {
+                    showResult('leadsResult', {
+                        status: response.status,
+                        data: data
+                    }, response.ok);
+                }
+            } catch (error) {
+                showResult('leadsResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testPaymentLinks() {
+            const testData = {
+                FAMILY_ID: 'TEST_FAMILY_123',
+                URL_LINK: 'https://sp.ilmulquran.com/student/invoice/TEST_FAMILY_123/TEST_ID'
+            };
+
+            try {
+                const response = await fetch(`${erpUrl()}/erp/family_paymentlink/postdata`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                const data = await response.text();
+                try {
+                    const jsonData = JSON.parse(data);
+                    showResult('paymentResult', {
+                        status: response.status,
+                        data: jsonData
+                    }, response.ok);
+                } catch {
+                    showResult('paymentResult', {
+                        status: response.status,
+                        data: data
+                    }, response.ok);
+                }
+            } catch (error) {
+                showResult('paymentResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testClassHistory() {
+            const testUserId = 'TEST_USER';
+            const testStudentId = 'TEST_STUDENT';
+            const currentDate = new Date().toISOString().split('T')[0];
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            const fromDate = oneMonthAgo.toISOString().split('T')[0];
+
+            try {
+                const response = await fetch(
+                    `${erpUrl()}/erp/classhistory/getdata?P_USER_ID=${testUserId}&P_STUDENT_ID=${testStudentId}&P_FROM_DATE=${fromDate}&P_TO_DATE=${currentDate}`
+                );
+                const data = await response.json();
+                showResult('classHistoryResult', {
+                    status: response.status,
+                    hasData: !!data.items,
+                    itemCount: data.items?.length || 0
+                }, response.ok);
+            } catch (error) {
+                showResult('classHistoryResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testClassSchedule() {
+            const testUserId = 'TEST_USER';
+            try {
+                const response = await fetch(`${erpUrl()}/erp/classschedule/getdata/?P_USER_ID=${testUserId}`);
+                const data = await response.json();
+                showResult('classScheduleResult', {
+                    status: response.status,
+                    hasData: !!data.items,
+                    itemCount: data.items?.length || 0
+                }, response.ok);
+            } catch (error) {
+                showResult('classScheduleResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testInvoiceInfo() {
+            const testUserId = 'TEST_USER';
+            try {
+                const response = await fetch(`${erpUrl()}/erp/invoiceinfo/getdata?P_USER_ID=${testUserId}`);
+                const data = await response.json();
+                showResult('invoiceResult', {
+                    status: response.status,
+                    hasData: !!data.items,
+                    itemCount: data.items?.length || 0
+                }, response.ok);
+            } catch (error) {
+                showResult('invoiceResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testPaymentHistory() {
+            const testUserId = 'TEST_USER';
+            try {
+                const response = await fetch(`${erpUrl()}/erp/paymenthistory/getdata?P_USER_ID=${testUserId}`);
+                const data = await response.json();
+                showResult('paymentHistoryResult', {
+                    status: response.status,
+                    hasData: !!data.items,
+                    itemCount: data.items?.length || 0
+                }, response.ok);
+            } catch (error) {
+                showResult('paymentHistoryResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testNotes() {
+            const testData = {
+                NOTE_ID: `TEST_${Date.now()}`,
+                NOTE_TEXT: 'Test note from API',
+                CREATED_BY: 'API_TEST'
+            };
+
+            try {
+                const response = await fetch(`${erpUrl()}/erp/notes/postdata`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                const data = await response.text();
+                try {
+                    const jsonData = JSON.parse(data);
+                    showResult('notesResult', {
+                        status: response.status,
+                        data: jsonData
+                    }, response.ok);
+                } catch {
+                    showResult('notesResult', {
+                        status: response.status,
+                        data: data
+                    }, response.ok);
+                }
+            } catch (error) {
+                showResult('notesResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testWhatsApp() {
+            const testData = {
+                CONVERSATION_ID: `TEST_${Date.now()}`,
+                MESSAGE: 'Test WhatsApp message',
+                FROM: 'TEST_USER'
+            };
+
+            try {
+                const response = await fetch(`${erpUrl()}/erp/waconversations/insert/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                const data = await response.text();
+                try {
+                    const jsonData = JSON.parse(data);
+                    showResult('whatsappResult', {
+                        status: response.status,
+                        data: jsonData
+                    }, response.ok);
+                } catch {
+                    showResult('whatsappResult', {
+                        status: response.status,
+                        data: data
+                    }, response.ok);
+                }
+            } catch (error) {
+                showResult('whatsappResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testResponseTime() {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${erpUrl()}/erp/classhistory/getdata?P_USER_ID=TEST`);
+                const responseTime = Date.now() - startTime;
+                const isGood = responseTime < 3000;
+                showResult('responseTimeResult', {
+                    responseTime: `${responseTime}ms`,
+                    status: isGood ? 'Good' : 'Slow',
+                    threshold: '< 3000ms'
+                }, isGood, !isGood);
+            } catch (error) {
+                const responseTime = Date.now() - startTime;
+                showResult('responseTimeResult', {
+                    responseTime: `${responseTime}ms`,
+                    error: error.message
+                }, false);
+            }
+        }
+
+        async function runAllTests() {
+            testStats = { passed: 0, failed: 0, warnings: 0 };
+            updateStats();
+            
+            const tests = [
+                testConnectivity,
+                testLeadsInsert,
+                testPaymentLinks,
+                testClassHistory,
+                testClassSchedule,
+                testInvoiceInfo,
+                testPaymentHistory,
+                testNotes,
+                testWhatsApp,
+                testResponseTime
+            ];
+
+            for (const test of tests) {
+                await test();
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between tests
+            }
+        }
+    </script>
+</body>
+</html>

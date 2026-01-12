@@ -2,6 +2,7 @@ import LeadsForm from "@/models/LeadsForm";
 import connectDB from "@/config/db";
 import axios from "axios"; // Make sure axios is installed
 import { NextResponse } from "next/server"; // Import NextResponse
+import ERP_BASE_URL from "@/config/erpUrl";
 
 export async function POST(req) {
   try {
@@ -45,7 +46,7 @@ export async function POST(req) {
     };
     // Send the lead data to the Oracle endpoint
     const response = await axios.post(
-      "${ERP_BASE_URL}/yfc_erp/YfcLeads/insertleads",
+      `${ERP_BASE_URL}/erp/YfcLeads/insertleads`,
       leadData,
       {
         headers: {

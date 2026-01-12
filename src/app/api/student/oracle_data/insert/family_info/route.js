@@ -2,6 +2,7 @@ import axios from "axios";
 import connectDB from "@/config/db";
 import Student from "@/models/Student";
 import { NextResponse } from "next/server";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 export async function POST(req) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req) {
 
     // Fetch data from the external API
     const response = await axios.get(
-      `${ERP_BASE_URL}/yfc_erp/getdata/yfc/?P_USER_ID=${userid}`
+      `${ERP_BASE_URL}/erp/getdata/yfc/?P_USER_ID=${userid}`
     );
 
     const data = response.data.items; // Ensure this path is correct based on the API response structure

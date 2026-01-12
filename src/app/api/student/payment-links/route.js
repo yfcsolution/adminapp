@@ -3,6 +3,7 @@ import connectDB from "@/config/db";
 import PaymentLinks from "@/models/PaymentLinks";
 import { NextResponse } from "next/server";
 import axios from "axios";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 export const GET = async () => {
   try {
@@ -25,7 +26,7 @@ export const GET = async () => {
 
         try {
           const response = await axios.post(
-            "${ERP_BASE_URL}/yfc_erp/family_paymentlink/postdata",
+            `${ERP_BASE_URL}/erp/family_paymentlink/postdata`,
             {
               FAMILY_ID: userid,
               URL_LINK: paymentLink, // Changed from duplicate FAMILY_ID

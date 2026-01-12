@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import axios from "axios";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 const RemindersSchema = new mongoose.Schema(
   {
@@ -83,7 +84,7 @@ RemindersSchema.methods.syncToExternalAPI = async function (
     };
 
     const response = await axios.post(
-      "${ERP_BASE_URL}/yfc_erp/reminders/postdata",
+      `${ERP_BASE_URL}/erp/reminders/postdata`,
       payload // Removed JSON.stringify
     );
 

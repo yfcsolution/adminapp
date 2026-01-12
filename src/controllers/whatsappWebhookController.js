@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"; // Import NextResponse
 import Webhook from "@/models/whatsappWebhookSchema"; // Import Webhook model
 import axios from "axios";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 // Function to fetch all webhook data from the database
 export const whatsappWebhookData = async ({ page = 1, pageSize = 10 }) => {
@@ -85,7 +86,7 @@ export const handleUnSyncedLogs = async () => {
       try {
         // Send the data to the Oracle API
         const response = await axios.post(
-          "${ERP_BASE_URL}/yfc_erp/waconversations/insert/",
+          `${ERP_BASE_URL}/erp/waconversations/insert/`,
           data
         );
 

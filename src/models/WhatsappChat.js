@@ -92,7 +92,7 @@
 
 //     // Make the POST request to Oracle API
 //     const response = await axios.post(
-//       "${ERP_BASE_URL}/yfc_erp/waconversations/insert/",
+//       "${ERP_BASE_URL}/erp/waconversations/insert/",
 //       data
 //     );
 

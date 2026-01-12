@@ -1,6 +1,7 @@
 import React from "react";
 
 import axios from "axios";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 export const syncDataToOracle = async (lead) => {
   try {
@@ -37,7 +38,7 @@ export const syncDataToOracle = async (lead) => {
 
     // Make the POST request using Axios
     const response = await axios.post(
-      "${ERP_BASE_URL}/yfc_erp/YfcLeads/insertleads",
+      `${ERP_BASE_URL}/erp/YfcLeads/insertleads`,
       requestBody,
       {
         headers: {

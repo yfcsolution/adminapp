@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import axios from "axios";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 // Define the webhook schema
 const webhookSchema = new mongoose.Schema(
@@ -91,7 +92,7 @@ webhookSchema.methods.sendToOracle = async function () {
 
   try {
     const response = await axios.post(
-      "${ERP_BASE_URL}/yfc_erp/whatsapp/insert/",
+      `${ERP_BASE_URL}/erp/whatsapp/insert/`,
       data
     );
     if (response.status === 200) {

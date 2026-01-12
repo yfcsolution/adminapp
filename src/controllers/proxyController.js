@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 export const handleClassesHistory = async (req) => {
   try {
@@ -17,7 +18,7 @@ export const handleClassesHistory = async (req) => {
 
     // Define the external API URL
     const EXTERNAL_API_URL =
-      "${ERP_BASE_URL}/yfc_erp/classhistory/getdata";
+      `${ERP_BASE_URL}/erp/classhistory/getdata`;
 
     // Make the request to the external API
     const response = await axios.get(EXTERNAL_API_URL, {

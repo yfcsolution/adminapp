@@ -2,6 +2,7 @@ import connectDB from "@/config/db";
 import axios from "axios"; // Ensure axios is installed
 import { NextResponse } from "next/server";
 import Webhook from "@/models/whatsappWebhookSchema";
+import ERP_BASE_URL from "@/config/erpUrl";
 
 const formatDateInTimeZone = (date, timeZone = "Asia/Karachi") => {
   return new Date(date).toLocaleString("en-US", {
@@ -66,7 +67,7 @@ export async function POST(req) {
 
     // Send the data to the Oracle API
     const response = await axios.post(
-      "${ERP_BASE_URL}/yfc_erp/waconversations/insert/",
+      `${ERP_BASE_URL}/erp/waconversations/insert/`,
       data,
       {
         headers: {
