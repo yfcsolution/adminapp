@@ -84,7 +84,7 @@ NotesSchema.methods.syncToExternalAPI = async function (
     };
 
     const response = await axios.post(
-      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/notes/postdata",
+      "${ERP_BASE_URL}/yfc_erp/notes/postdata",
       payload
     );
 

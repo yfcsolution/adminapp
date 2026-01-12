@@ -91,7 +91,7 @@ const DuplicateLeadsSchema = new mongoose.Schema(
 DuplicateLeadsSchema.methods.syncWithOracle = async function () {
   try {
     const oracleEndpoint =
-      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads_Contact/insertleads"; // Update this with your actual Oracle API endpoint
+      "${ERP_BASE_URL}/yfc_erp/YfcLeads_Contact/insertleads"; // Update this with your actual Oracle API endpoint
 
     // Determine the device value based on the phone number prefix
     let deviceValue = 4; // Default device value

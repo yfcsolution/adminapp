@@ -142,7 +142,7 @@ leadsSchema.pre("save", async function (next) {
 leadsSchema.methods.syncWithOracle = async function () {
   try {
     const oracleEndpoint =
-      "https://sss.yourfuturecampus.com:8090/apeks/apps/erp/YfcLeads/insertleads"; // Update this with your actual Oracle API endpoint
+      "${ERP_BASE_URL}/yfc_erp/YfcLeads/insertleads"; // Update this with your actual Oracle API endpoint
 
     // Determine the device value based on the phone number prefix
     let deviceValue = 4; // Default device value

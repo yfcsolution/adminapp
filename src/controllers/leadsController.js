@@ -499,7 +499,7 @@ export const handleLeadsAdditionalData = async (req) => {
 
     // Send data to the external API
     const response = await fetch(
-      "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/addstudent/postdata",
+      "${ERP_BASE_URL}/yfc_erp/addstudent/postdata",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -25,7 +25,7 @@ export const GET = async () => {
 
         try {
           const response = await axios.post(
-            "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/family_paymentlink/postdata",
+            "${ERP_BASE_URL}/yfc_erp/family_paymentlink/postdata",
             {
               FAMILY_ID: userid,
               URL_LINK: paymentLink, // Changed from duplicate FAMILY_ID

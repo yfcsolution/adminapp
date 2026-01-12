@@ -33,7 +33,7 @@ export async function POST(req) {
 
         // Send the lead data to the specified endpoint
         const response = await axios.post(
-          "https://sss.yourfuturecampus.com:8443/apeks/apps/erp/YfcLeads/insertleads",
+          "${ERP_BASE_URL}/yfc_erp/YfcLeads/insertleads",
           leadData
         );
         if (response.status == 200) {
