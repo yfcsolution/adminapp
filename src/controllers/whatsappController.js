@@ -17,22 +17,24 @@ export const handleWhatsappMessage = async (req) => {
     // Extract mobile number from user data
     const number = user.phonenumber;
 
-    // WhatsApp message payload
-    const messageData = {
-      appkey: appkey,
-      authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
+    // Send WhatsApp message using unified sender
+    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
+    
+    const sendResult = await sendWhatsAppMessage({
       to: number,
-      template_id,
+      appkey: appkey,
+      template_id: template_id,
+    });
+
+    const response = {
+      status: sendResult.status || 200,
+      data: sendResult.response,
     };
+
     const data = {
       appkey: appkey,
       userid: userid,
     };
-    // Send WhatsApp message request
-    const response = await axios.post(
-      "https://waserver.pro/api/create-message",
-      messageData
-    );
 
     // Successful response from WhatsApp API
     return NextResponse.json(
@@ -82,22 +84,24 @@ export const handleWhatsappMessageLeads = async (req) => {
     // Extract mobile number from user data
     const number = user.PHONE_NO;
 
-    // WhatsApp message payload
-    const messageData = {
-      appkey: appkey,
-      authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
+    // Send WhatsApp message using unified sender
+    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
+    
+    const sendResult = await sendWhatsAppMessage({
       to: number,
-      template_id,
+      appkey: appkey,
+      template_id: template_id,
+    });
+
+    const response = {
+      status: sendResult.status || 200,
+      data: sendResult.response,
     };
+
     const data = {
       appkey: appkey,
       lead_id: lead_id,
     };
-    // Send WhatsApp message request
-    const response = await axios.post(
-      "https://waserver.pro/api/create-message",
-      messageData
-    );
 
     // Successful response from WhatsApp API
     return NextResponse.json(
@@ -139,8 +143,18 @@ export const handleLeadsCustomMessages = async (req) => {
   console.log("Current Server Selected:", server);
 
   try {
-    const { message, appkey, lead_id, receiver, family_id, conversationId } =
-      await req.json();
+    const { 
+      message, 
+      appkey, 
+      lead_id, 
+      receiver, 
+      family_id, 
+      conversationId,
+      templateName,
+      exampleArr,
+      token,
+      mediaUri
+    } = await req.json();
 
     let number;
     let familyId = null;
@@ -176,37 +190,23 @@ export const handleLeadsCustomMessages = async (req) => {
       }
     }
 
-    // ✅ Send the message based on selected server
-    let response;
-    if (server === "baileys") {
-      const baileysPayload = {
-        account: appkey,
-        number: number,
-        message: message,
-      };
+    // ✅ Send the message using unified sender
+    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
+    
+    const sendResult = await sendWhatsAppMessage({
+      to: number,
+      message: message,
+      appkey: appkey,
+      templateName: templateName,
+      exampleArr: exampleArr,
+      token: token,
+      mediaUri: mediaUri,
+    });
 
-      // Updated to use the Vercel proxy endpoint
-      response = await axios.post(
-        "https://wa.yourfuturecampus.com/send-message",
-        baileysPayload
-      );
-
-      console.log("Sent via Baileys:", response.data);
-    } else {
-      const messageData = {
-        appkey: appkey,
-        authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
-        to: number,
-        message: message,
-      };
-
-      response = await axios.post(
-        "https://waserver.pro/api/create-message",
-        messageData
-      );
-
-      console.log("Sent via Default Server:", response.data);
-    }
+    const response = { 
+      status: sendResult.status || 200,
+      data: sendResult.response 
+    };
 
     // ✅ Common webhook + DB save + Oracle logic
     let webhookEntry;

@@ -65,38 +65,19 @@ export async function POST(req) {
       return NextResponse.json({ error: "Id is required" }, { status: 400 });
     }
 
-    // ✅ Select message payload and API endpoint
-    let response;
-    if (server === "baileys") {
-      const baileysPayload = {
-        account: appKey,
-        number: receiver,
-        message,
-      };
-      console.log("Baileys Payload:", baileysPayload);
+    // ✅ Send message using unified sender
+    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
+    
+    const sendResult = await sendWhatsAppMessage({
+      to: receiver,
+      message: message,
+      appkey: appKey,
+    });
 
-      // Updated to use Vercel proxy endpoint
-      response = await axios.post(
-        "https://wa.yourfuturecampus.com/send-message",
-        baileysPayload
-      );
-
-      console.log("Message sent via Baileys:", response.data);
-    } else {
-      const messageData = {
-        appkey: appKey,
-        authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
-        to: receiver,
-        message,
-      };
-
-      response = await axios.post(
-        "https://waserver.pro/api/create-message",
-        messageData
-      );
-
-      console.log("Message sent via Default Server:", response.data);
-    }
+    const response = {
+      status: sendResult.status || 200,
+      data: sendResult.response,
+    };
 
     // ✅ Save to DB if message sent successfully
     if (response.status === 200) {

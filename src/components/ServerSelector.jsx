@@ -8,25 +8,41 @@ export default function ServerSelector() {
   useEffect(() => {
     fetch("/api/server-config")
       .then(res => res.json())
-      .then(data => setSelected(data.selectedServer));
+      .then(data => {
+        // Handle backward compatibility: "other" → "waserver"
+        const server = data.selectedServer === "other" ? "waserver" : (data.selectedServer || "baileys");
+        setSelected(server);
+      });
   }, []);
 
   const updateSelection = async (newServer) => {
     setSelected(newServer);
     await fetch("/api/server-config", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ selectedServer: newServer }),
     });
   };
 
+  const servers = [
+    { id: "baileys", name: "Baileys" },
+    { id: "waserver", name: "Waserver.pro" },
+    { id: "wacrm", name: "WACRM" },
+  ];
+
   return (
     <div className="space-x-4">
-      <button onClick={() => updateSelection("baileys")} className={selected === "baileys" ? "font-bold" : ""}>
-        Baileys
-      </button>
-      <button onClick={() => updateSelection("other")} className={selected === "other" ? "font-bold" : ""}>
-        Other
-      </button>
+      {servers.map((server) => (
+        <button
+          key={server.id}
+          onClick={() => updateSelection(server.id)}
+          className={selected === server.id ? "font-bold" : ""}
+        >
+          {server.name}
+        </button>
+      ))}
     </div>
   );
 }

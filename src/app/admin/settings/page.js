@@ -23,40 +23,49 @@ const ServerSwitcher = () => {
   useEffect(() => {
     fetch("/api/server-config")
       .then((res) => res.json())
-      .then((data) => setSelected(data.selectedServer));
+      .then((data) => setSelected(data.selectedServer || "baileys"));
   }, []);
 
   const updateSelection = async (newServer) => {
     setSelected(newServer);
     await fetch("/api/server-config", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ selectedServer: newServer }),
     });
     toast.success(`Switched to ${newServer} server`);
   };
 
+  const servers = [
+    { id: "baileys", name: "Baileys", desc: "Self-hosted" },
+    { id: "waserver", name: "Waserver.pro", desc: "Third-party" },
+    { id: "wacrm", name: "WACRM", desc: "Template API" },
+  ];
+
   return (
-    <div className="space-x-4 mt-4">
-      <button
-        onClick={() => updateSelection("baileys")}
-        className={`px-4 py-2 rounded ${
-          selected === "baileys"
-            ? "bg-teal-600 text-white"
-            : "bg-gray-200 text-gray-800"
-        }`}
-      >
-        Baileys
-      </button>
-      <button
-        onClick={() => updateSelection("other")}
-        className={`px-4 py-2 rounded ${
-          selected === "other"
-            ? "bg-teal-600 text-white"
-            : "bg-gray-200 text-gray-800"
-        }`}
-      >
-        Other
-      </button>
+    <div className="mt-4">
+      <p className="text-sm text-gray-600 mb-3">Select WhatsApp Provider:</p>
+      <div className="flex flex-wrap gap-3">
+        {servers.map((server) => (
+          <button
+            key={server.id}
+            onClick={() => updateSelection(server.id)}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              selected === server.id
+                ? "bg-teal-600 text-white shadow-md"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+            }`}
+            title={server.desc}
+          >
+            {server.name}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-gray-500 mt-2">
+        Current: <span className="font-semibold">{servers.find(s => s.id === selected)?.name}</span>
+      </p>
     </div>
   );
 };

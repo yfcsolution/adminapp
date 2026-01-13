@@ -186,17 +186,17 @@ export const handleLeadsSubmit = async (req) => {
 
 // handle message and email sending
 const sendWhatsAppMessage = async (phone, appKey, message) => {
-  return await axios
-    .post("https://waserver.pro/api/create-message", {
-      appkey: appKey,
-      authkey: "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
+  try {
+    const { sendWhatsAppMessage: unifiedSender } = await import("@/utils/whatsappSender");
+    const result = await unifiedSender({
       to: phone,
-      message,
-    })
-    .then((response) => response.data)
-    .catch((error) => {
-      throw new Error(`WhatsApp message failed: ${error.message}`);
+      message: message,
+      appkey: appKey,
     });
+    return result.response;
+  } catch (error) {
+    throw new Error(`WhatsApp message failed: ${error.error || error.message}`);
+  }
 };
 
 const getAppKey = (phone) => {

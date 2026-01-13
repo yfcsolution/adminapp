@@ -11,7 +11,21 @@ export async function GET() {
 
 export async function POST(req) {
   await connectDB();
-  const { selectedServer } = await req.json();
+  let { selectedServer } = await req.json();
+
+  // Backward compatibility: Migrate "other" to "waserver"
+  if (selectedServer === "other") {
+    selectedServer = "waserver";
+  }
+
+  // Validate server value
+  const validServers = ["baileys", "waserver", "wacrm"];
+  if (!validServers.includes(selectedServer)) {
+    return Response.json(
+      { error: `Invalid server. Must be one of: ${validServers.join(", ")}` },
+      { status: 400 }
+    );
+  }
 
   const config = await ServerConfig.findOneAndUpdate(
     {},
