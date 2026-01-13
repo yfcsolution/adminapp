@@ -1,30 +1,7 @@
 // WhatsApp Providers Configuration
-// Move sensitive keys to environment variables
+// Only WACRM (WhatsApp Cloud API) is supported
 
 export const WHATSAPP_PROVIDERS = {
-  baileys: {
-    name: "Baileys",
-    type: "self-hosted",
-    baseUrl: "https://wa.yourfuturecampus.com",
-    backendUrl: "http://45.76.132.90:3001",
-    endpoints: {
-      accounts: "/accounts",
-      connect: "/connect",
-      disconnect: "/disconnect",
-      sendMessage: "/send-message",
-      events: "/events"
-    }
-  },
-  waserver: {
-    name: "Waserver.pro",
-    type: "third-party",
-    baseUrl: "https://waserver.pro/api",
-    authKey: process.env.WHATSAPP_WASERVER_AUTH_KEY || "nFMsTFQPQedVPNOtCrjjGvk5xREsJq2ClbU79vFNk8NlgEb9oG",
-    endpoints: {
-      createMessage: "/create-message",
-      webhook: "/cron/execute-webhook"
-    }
-  },
   wacrm: {
     name: "WACRM (WhatsApp Cloud API)",
     type: "whatsapp-cloud-api", // Meta's official WhatsApp Business API
@@ -38,7 +15,7 @@ export const WHATSAPP_PROVIDERS = {
 
 // Get provider configuration
 export function getWhatsAppProvider(providerName) {
-  return WHATSAPP_PROVIDERS[providerName] || WHATSAPP_PROVIDERS.baileys;
+  return WHATSAPP_PROVIDERS[providerName] || WHATSAPP_PROVIDERS.wacrm;
 }
 
 // Get provider base URL

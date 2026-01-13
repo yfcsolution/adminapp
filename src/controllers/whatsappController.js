@@ -1,29 +1,67 @@
 import Student from "@/models/Student";
 import LeadsForm from "@/models/LeadsForm";
 import { NextResponse } from "next/server";
-import axios from "axios";
 import Webhook from "@/models/whatsappWebhookSchema";
-import { getCurrentServer } from "@/config/getCurrentServer";
+import { sendWhatsAppMessage } from "@/utils/whatsappSender";
+
+/**
+ * Format phone number to E.164 format
+ */
+function formatPhoneNumber(phoneNumber) {
+  if (!phoneNumber) return null;
+  return phoneNumber.startsWith("+") ? phoneNumber : `+${phoneNumber}`;
+}
+
 export const handleWhatsappMessage = async (req) => {
   try {
-    // Extract template_id and userid from request body
-    const { template_id, appkey, userid } = await req.json();
+    // Extract templateName, exampleArr, token, and userid/family_id from request body
+    const { templateName, exampleArr, token, userid, family_id, mediaUri } = await req.json();
 
-    // Retrieve user details based on userid
-    const user = await Student.findOne({ userid });
+    // Validate required fields for WACRM
+    if (!templateName) {
+      return NextResponse.json(
+        { error: "templateName is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "token (JWT) is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
+
+    // Get userid from family_id if provided
+    const userId = userid || family_id;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "userid or family_id is required" },
+        { status: 400 }
+      );
+    }
+
+    // Retrieve only phonenumber field for better performance
+    const user = await Student.findOne({ userid: userId }).select("phonenumber").lean();
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    // Extract mobile number from user data
-    const number = user.phonenumber;
-
-    // Send WhatsApp message using unified sender
-    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
     
+    const number = formatPhoneNumber(user.phonenumber);
+    if (!number) {
+      return NextResponse.json(
+        { error: "Phone number not found for user" },
+        { status: 404 }
+      );
+    }
+
+    // Send WhatsApp template message using WACRM
     const sendResult = await sendWhatsAppMessage({
       to: number,
-      appkey: appkey,
-      template_id: template_id,
+      templateName,
+      exampleArr: exampleArr || [],
+      token,
+      mediaUri,
     });
 
     const response = {
@@ -32,14 +70,15 @@ export const handleWhatsappMessage = async (req) => {
     };
 
     const data = {
-      appkey: appkey,
-      userid: userid,
+      userid: userId,
+      family_id: userId,
+      templateName: templateName,
     };
 
     // Successful response from WhatsApp API
     return NextResponse.json(
       {
-        message: "WhatsApp message sent successfully",
+        message: "WhatsApp template message sent successfully via WACRM",
         data,
         status: response.status,
       },
@@ -72,9 +111,23 @@ export const handleWhatsappMessage = async (req) => {
 // handle whatsapp message leads
 export const handleWhatsappMessageLeads = async (req) => {
   try {
-    // Extract template_id, appkey, and lead_id from request body
-    // Follows same pattern: external API sends lead_id, we lookup phone from LeadsForm
-    const { template_id, appkey, lead_id } = await req.json();
+    // Extract templateName, exampleArr, token, and lead_id from request body
+    const { templateName, exampleArr, token, lead_id, mediaUri } = await req.json();
+
+    // Validate required fields for WACRM
+    if (!templateName) {
+      return NextResponse.json(
+        { error: "templateName is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "token (JWT) is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
 
     if (!lead_id) {
       return NextResponse.json(
@@ -83,22 +136,27 @@ export const handleWhatsappMessageLeads = async (req) => {
       );
     }
 
-    // Retrieve lead details based on lead_id (same pattern as existing code)
-    const user = await LeadsForm.findOne({ LEAD_ID: lead_id });
-    if (!user) {
+    // Retrieve only PHONE_NO field for better performance
+    const lead = await LeadsForm.findOne({ LEAD_ID: lead_id }).select("PHONE_NO").lean();
+    if (!lead) {
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
-    // Extract mobile number from lead data (PHONE_NO field in LeadsForm)
-    const number = user.PHONE_NO;
+    const number = formatPhoneNumber(lead.PHONE_NO);
+    if (!number) {
+      return NextResponse.json(
+        { error: "Phone number not found for lead" },
+        { status: 404 }
+      );
+    }
 
-    // Send WhatsApp message using unified sender
-    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
-    
+    // Send WhatsApp template message using WACRM
     const sendResult = await sendWhatsAppMessage({
       to: number,
-      appkey: appkey,
-      template_id: template_id,
+      templateName,
+      exampleArr: exampleArr || [],
+      token,
+      mediaUri,
     });
 
     const response = {
@@ -107,14 +165,14 @@ export const handleWhatsappMessageLeads = async (req) => {
     };
 
     const data = {
-      appkey: appkey,
       lead_id: lead_id,
+      templateName: templateName,
     };
 
     // Successful response from WhatsApp API
     return NextResponse.json(
       {
-        message: "WhatsApp message sent successfully",
+        message: "WhatsApp template message sent successfully via WACRM",
         data,
         status: response.status,
       },
@@ -147,13 +205,8 @@ export const handleWhatsappMessageLeads = async (req) => {
 /********************************  handle lead cutom whatsapp messages  *****************************/
 
 export const handleLeadsCustomMessages = async (req) => {
-  const server = await getCurrentServer();
-  console.log("Current Server Selected:", server);
-
   try {
     const { 
-      message, 
-      appkey, 
       lead_id, 
       receiver, 
       family_id, 
@@ -164,51 +217,73 @@ export const handleLeadsCustomMessages = async (req) => {
       mediaUri
     } = await req.json();
 
+    // Validate required fields for WACRM
+    if (!templateName) {
+      return NextResponse.json(
+        { error: "templateName is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "token (JWT) is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
+
     let number;
     let familyId = null;
 
-    // Resolve number
+    // Resolve number from family_id, lead_id, or receiver
     if (receiver) {
-      number = receiver;
+      number = formatPhoneNumber(receiver);
       familyId = family_id;
-      console.log("Receiver provided directly:", number);
     } else if (family_id) {
       familyId = family_id;
-      const family = await Student.findOne({ userid: family_id });
+      const family = await Student.findOne({ userid: family_id }).select("phonenumber").lean();
       if (!family) {
         return NextResponse.json(
           { error: "family not found" },
           { status: 404 }
         );
       }
-      number = family.phonenumber;
-      console.log("Number from Student:", number);
-    } else {
-      const user = await LeadsForm.findOne({ LEAD_ID: lead_id });
-      if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      number = formatPhoneNumber(family.phonenumber);
+    } else if (lead_id) {
+      const lead = await LeadsForm.findOne({ LEAD_ID: lead_id }).select("PHONE_NO").lean();
+      if (!lead) {
+        return NextResponse.json({ error: "Lead not found" }, { status: 404 });
       }
-      number = user.PHONE_NO;
-      console.log("Number from LeadsForm:", number);
+      number = formatPhoneNumber(lead.PHONE_NO);
 
-      const student = await Student.findOne({ phonenumber: number });
-      if (student) {
-        familyId = student.userid;
-        console.log("Family ID from Student:", familyId);
+      // Try to find familyId from phone number
+      if (number) {
+        const student = await Student.findOne({ phonenumber: number.replace("+", "") }).select("userid").lean();
+        if (student) {
+          familyId = student.userid;
+        }
       }
+    } else {
+      return NextResponse.json(
+        { error: "receiver, family_id, or lead_id is required" },
+        { status: 400 }
+      );
     }
 
-    // ✅ Send the message using unified sender
-    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
-    
+    if (!number) {
+      return NextResponse.json(
+        { error: "Phone number not found" },
+        { status: 404 }
+      );
+    }
+
+    // Send the template message using WACRM
     const sendResult = await sendWhatsAppMessage({
       to: number,
-      message: message,
-      appkey: appkey,
-      templateName: templateName,
-      exampleArr: exampleArr,
-      token: token,
-      mediaUri: mediaUri,
+      templateName,
+      exampleArr: exampleArr || [],
+      token,
+      mediaUri,
     });
 
     const response = { 
@@ -219,9 +294,9 @@ export const handleLeadsCustomMessages = async (req) => {
     // ✅ Common webhook + DB save + Oracle logic
     let webhookEntry;
     const newMessage = {
-      text: message,
+      text: `Template: ${templateName}`,
       isReply: true,
-      sender: appkey,
+      sender: "WACRM",
       receiver: number,
       createdAt: new Date(),
     };
@@ -252,10 +327,9 @@ export const handleLeadsCustomMessages = async (req) => {
         leadId: lead_id,
         receiver: number,
         conversation: [newMessage],
-        appkey: appkey,
+        appkey: "WACRM",
       });
       await webhookEntry.save();
-      console.log("New Webhook saved");
     }
 
     if (webhookEntry) {
@@ -265,13 +339,13 @@ export const handleLeadsCustomMessages = async (req) => {
 
     return NextResponse.json(
       {
-        message: "WhatsApp custom message sent successfully",
+        message: "WhatsApp template message sent successfully via WACRM",
         data: {
           leadId: lead_id,
           familyId: familyId,
-          conversation: message,
+          templateName: templateName,
           isReply: true,
-          appKey: appkey,
+          provider: "WACRM",
         },
         status: response.status,
       },

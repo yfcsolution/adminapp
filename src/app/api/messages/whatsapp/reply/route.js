@@ -1,112 +1,102 @@
 import connectDB from "@/config/db";
 import Webhook from "@/models/whatsappWebhookSchema";
 import { NextResponse } from "next/server";
-import axios from "axios";
-import { getCurrentServer } from "@/config/getCurrentServer";
-import mongoose from "mongoose";
+import { sendWhatsAppMessage } from "@/utils/whatsappSender";
+
+/**
+ * Format phone number to E.164 format
+ */
+function formatPhoneNumber(phoneNumber) {
+  if (!phoneNumber) return null;
+  return phoneNumber.startsWith("+") ? phoneNumber : `+${phoneNumber}`;
+}
 
 export async function POST(req) {
   await connectDB();
-  const server = await getCurrentServer();
-  console.log("Current Server Selected:", server);
 
   try {
-    const { Id, message } = await req.json();
-    let appKey, receiver;
+    const { Id, templateName, exampleArr, token, mediaUri } = await req.json();
 
-    // Check if conversationId is provided
-    if (Id) {
-      const existingConversation = await Webhook.findOne({
-        _id: new mongoose.Types.ObjectId(Id),
-      });
-      if (existingConversation) {
-        const lastMessage =
-          existingConversation.conversation[
-            existingConversation.conversation.length - 1
-          ];
+    // Validate required fields for WACRM
+    if (!templateName) {
+      return NextResponse.json(
+        { error: "templateName is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
 
-        const sender = lastMessage?.isReply
-          ? lastMessage.sender
-          : lastMessage.receiver;
-        receiver = lastMessage?.isReply
-          ? lastMessage.receiver
-          : lastMessage.sender;
+    if (!token) {
+      return NextResponse.json(
+        { error: "token (JWT) is required for WACRM (WhatsApp Cloud API)" },
+        { status: 400 }
+      );
+    }
 
-        if (
-          sender === "447862067920" ||
-          sender === "be4f69af-d825-4e7f-a029-2a68c5f732c9"
-        ) {
-          appKey = "be4f69af-d825-4e7f-a029-2a68c5f732c9";
-        } else if (
-          sender === "61480050048" ||
-          sender === "3fa548ce-ec9b-4906-8c5a-f48b0ef69cc8"
-        ) {
-          appKey = "3fa548ce-ec9b-4906-8c5a-f48b0ef69cc8";
-        } else if (
-          sender === "923045199176" ||
-          sender === "1fea0f8e-72f0-4ce4-8d3d-406b91b92e55"
-        ) {
-          appKey = "1fea0f8e-72f0-4ce4-8d3d-406b91b92e55";
-        } else if (
-          sender === "19142791693" ||
-          sender === "044d31bc-1666-4f72-8cc2-32be88c8a6d7"
-        ) {
-          appKey = "044d31bc-1666-4f72-8cc2-32be88c8a6d7";
-        } else {
-          appKey = "044d31bc-1666-4f72-8cc2-32be88c8a6d7"; // Default appKey
-        }
-      } else {
-        return NextResponse.json(
-          { error: "No conversation found for the provided ID" },
-          { status: 404 }
-        );
-      }
-    } else {
+    if (!Id) {
       return NextResponse.json({ error: "Id is required" }, { status: 400 });
     }
 
-    // ✅ Send message using unified sender
-    const { sendWhatsAppMessage } = await import("@/utils/whatsappSender");
+    // Get conversation and extract receiver from last message - optimized query
+    const existingConversation = await Webhook.findById(Id)
+      .select("conversation")
+      .lean();
     
+    if (!existingConversation || !existingConversation.conversation?.length) {
+      return NextResponse.json(
+        { error: "No conversation found for the provided ID" },
+        { status: 404 }
+      );
+    }
+
+    const lastMessage = existingConversation.conversation[existingConversation.conversation.length - 1];
+    const receiver = formatPhoneNumber(
+      lastMessage?.isReply ? lastMessage.receiver : lastMessage.sender
+    );
+
+    if (!receiver) {
+      return NextResponse.json(
+        { error: "Receiver phone number not found in conversation" },
+        { status: 404 }
+      );
+    }
+
+    // Send template message using WACRM
     const sendResult = await sendWhatsAppMessage({
       to: receiver,
-      message: message,
-      appkey: appKey,
+      templateName,
+      exampleArr: exampleArr || [],
+      token,
+      mediaUri,
     });
 
-    const response = {
-      status: sendResult.status || 200,
-      data: sendResult.response,
-    };
 
-    // ✅ Save to DB if message sent successfully
-    if (response.status === 200) {
+    // Save to DB if message sent successfully
+    if (sendResult.success) {
       const newMessage = {
-        text: message,
+        text: `Template: ${templateName}`,
         isReply: true,
-        sender: appKey,
+        sender: "WACRM",
         receiver,
         createdAt: new Date(),
       };
 
-      const webhookEntry = await Webhook.findOneAndUpdate(
-        { _id: Id },
+      const webhookEntry = await Webhook.findByIdAndUpdate(
+        Id,
         { $push: { conversation: newMessage } },
         { new: true }
       );
 
-      // ✅ Send to Oracle
-      const synced = await webhookEntry.sendToOracle();
-      if (synced) {
-        console.log("Data synced to Oracle successfully.");
-      } else {
-        console.error("Data syncing to Oracle failed.");
+      // Send to Oracle
+      if (webhookEntry) {
+        await webhookEntry.sendToOracle().catch(err => 
+          console.error("Oracle sync failed:", err)
+        );
       }
 
       return NextResponse.json(
         {
           message: "WhatsApp reply message sent successfully",
-          status: response.status,
+          status: sendResult.status,
         },
         { status: 200 }
       );

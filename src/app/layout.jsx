@@ -5,17 +5,7 @@ import { ToastProvider } from "@/components/ToastProvider";
 import { useEffect } from "react"; // Import useEffect
 import axios from "axios"; // Import axios
 export default function RootLayout({ children }) {
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      // Make the GET request to the cron URL using axios without logging
-      axios.get("https://waserver.pro/cron/execute-webhook").catch((error) => {
-        // Handle error silently if necessary
-        console.error("Error in cron job request:", error);
-      });
-    }, 120000);
-    // Cleanup function to clear the interval when the component unmounts
-    return () => clearInterval(intervalId);
-  }, []);
+  // Removed waserver.pro webhook call - only WACRM is used now
   useEffect(() => {
     // Function to fetch data every 15 minutes
     const fetchData = async () => {

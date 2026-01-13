@@ -18,12 +18,12 @@ import DashboardLayout from "../../admin_dashboard_layout/layout";
 import { toast } from "react-toastify";
 
 const ServerSwitcher = () => {
-  const [selected, setSelected] = useState("baileys");
+  const [selected, setSelected] = useState("wacrm");
 
   useEffect(() => {
     fetch("/api/server-config")
       .then((res) => res.json())
-      .then((data) => setSelected(data.selectedServer || "baileys"));
+      .then((data) => setSelected(data.selectedServer || "wacrm"));
   }, []);
 
   const updateSelection = async (newServer) => {
@@ -39,9 +39,7 @@ const ServerSwitcher = () => {
   };
 
   const servers = [
-    { id: "baileys", name: "Baileys", desc: "Self-hosted" },
-    { id: "waserver", name: "Waserver.pro", desc: "Third-party" },
-    { id: "wacrm", name: "WACRM", desc: "Template API" },
+    { id: "wacrm", name: "WACRM", desc: "WhatsApp Cloud API (Template API)" },
   ];
 
   return (

@@ -1,147 +1,40 @@
 // Unified WhatsApp Message Sender
-// Supports: Baileys, Waserver.pro, and WACRM
+// Only WACRM (WhatsApp Cloud API) is supported
 
 import axios from "axios";
-import { getCurrentServer } from "@/config/getCurrentServer";
 import { getWhatsAppProvider, getProviderUrl } from "@/config/whatsappProviders";
+import Student from "@/models/Student";
+import LeadsForm from "@/models/LeadsForm";
+import connectDB from "@/config/db";
+
+// Cache provider configuration for better performance
+const WACRM_PROVIDER = getWhatsAppProvider("wacrm");
+const WACRM_URL = getProviderUrl("wacrm", "sendTemplate");
 
 /**
- * Send WhatsApp message via selected provider
+ * Format phone number to E.164 format
+ * @param {string} phoneNumber - Phone number to format
+ * @returns {string} Formatted phone number with + prefix
+ */
+function formatPhoneNumber(phoneNumber) {
+  if (!phoneNumber) return null;
+  return phoneNumber.startsWith("+") ? phoneNumber : `+${phoneNumber}`;
+}
+
+/**
+ * Send WhatsApp template message via WACRM (WhatsApp Cloud API)
  * @param {Object} params - Message parameters
- * @param {string} params.to - Recipient phone number
- * @param {string} params.message - Message text
- * @param {string} params.appkey - App key (for Baileys/Waserver)
- * @param {string} params.templateName - Template name (for WACRM)
+ * @param {string} params.to - Recipient phone number (E.164 format)
+ * @param {string} params.templateName - Template name (required, must be pre-approved by Meta)
  * @param {Array} params.exampleArr - Template variables (for WACRM)
- * @param {string} params.token - API token (for WACRM)
- * @param {string} params.mediaUri - Media URI (optional)
- * @param {string} params.template_id - Template ID (for Waserver)
+ * @param {string} params.token - API token (JWT, required for WACRM)
+ * @param {string} params.mediaUri - Media URI (optional, for media templates)
  * @returns {Promise<Object>} Response from WhatsApp API
  */
 export async function sendWhatsAppMessage(params) {
-  const {
-    to,
-    message,
-    appkey,
-    templateName,
-    exampleArr,
-    token,
-    mediaUri,
-    template_id,
-  } = params;
+  const { to, templateName, exampleArr, token, mediaUri } = params;
 
-  const server = await getCurrentServer();
-  const provider = getWhatsAppProvider(server);
-
-  console.log(`Sending WhatsApp message via ${provider.name}...`);
-
-  try {
-    let response;
-
-    switch (server) {
-      case "baileys":
-        response = await sendViaBaileys({ to, message, appkey, mediaUri });
-        break;
-
-      case "waserver":
-      case "other": // Backward compatibility
-        response = await sendViaWaserver({
-          to,
-          message,
-          appkey,
-          template_id,
-        });
-        break;
-
-      case "wacrm":
-        response = await sendViaWACRM({
-          to,
-          templateName,
-          exampleArr,
-          token,
-          mediaUri,
-          message, // Include message in case templateName is not provided
-        });
-        break;
-
-      default:
-        // Fallback to Baileys for unknown servers
-        console.warn(`Unknown server "${server}", falling back to Baileys`);
-        response = await sendViaBaileys({ to, message, appkey, mediaUri });
-    }
-
-    console.log(`Message sent successfully via ${provider.name}:`, response.data);
-    return {
-      success: true,
-      provider: provider.name,
-      response: response.data,
-      status: response.status,
-    };
-  } catch (error) {
-    console.error(`Error sending message via ${provider.name}:`, error);
-    throw {
-      success: false,
-      provider: provider.name,
-      error: error.message,
-      details: error.response?.data,
-      status: error.response?.status,
-    };
-  }
-}
-
-/**
- * Send message via Baileys (Self-hosted)
- */
-async function sendViaBaileys({ to, message, appkey, mediaUri }) {
-  const provider = getWhatsAppProvider("baileys");
-  const url = getProviderUrl("baileys", "sendMessage");
-
-  const payload = {
-    account: appkey,
-    number: to,
-    message: message,
-  };
-
-  if (mediaUri) {
-    payload.media = {
-      uri: mediaUri,
-    };
-  }
-
-  return await axios.post(url, payload);
-}
-
-/**
- * Send message via Waserver.pro
- */
-async function sendViaWaserver({ to, message, appkey, template_id }) {
-  const provider = getWhatsAppProvider("waserver");
-  const url = getProviderUrl("waserver", "createMessage");
-
-  const payload = {
-    appkey: appkey,
-    authkey: provider.authKey,
-    to: to,
-  };
-
-  if (template_id) {
-    payload.template_id = template_id;
-  } else {
-    payload.message = message;
-  }
-
-  return await axios.post(url, payload);
-}
-
-/**
- * Send WhatsApp Cloud API template message via WACRM
- * WACRM is a wrapper around Meta's official WhatsApp Business API
- * Templates must be pre-approved by Meta before use
- */
-async function sendViaWACRM({ to, templateName, exampleArr, token, mediaUri }) {
-  const provider = getWhatsAppProvider("wacrm");
-  const url = getProviderUrl("wacrm", "sendTemplate");
-
+  // Validate required fields early
   if (!token) {
     throw new Error("WACRM API token (JWT) is required for WhatsApp Cloud API");
   }
@@ -150,33 +43,53 @@ async function sendViaWACRM({ to, templateName, exampleArr, token, mediaUri }) {
     throw new Error("Template name is required. Templates must be pre-approved by Meta.");
   }
 
-  // WhatsApp Cloud API template payload
-  // templateName: Pre-approved template name from Meta
-  // exampleArr: Array of template variable values
-  const payload = {
-    sendTo: to, // Phone number in E.164 format (e.g., +923130541339)
-    templetName: templateName, // Pre-approved template name
-    exampleArr: exampleArr || [], // Template variable values
-    token: token, // JWT token for authentication
-  };
-
-  // Optional media URI for media templates (images, videos, documents)
-  if (mediaUri) {
-    payload.mediaUri = mediaUri;
+  if (!to) {
+    throw new Error("Recipient phone number is required");
   }
 
-  // Send to WACRM endpoint which forwards to WhatsApp Cloud API
-  return await axios.post(url, payload, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${provider.apiKey || ""}`, // WACRM API key
-    },
-  });
+  try {
+    // WhatsApp Cloud API template payload
+    const payload = {
+      sendTo: formatPhoneNumber(to), // Phone number in E.164 format
+      templetName: templateName, // Pre-approved template name
+      exampleArr: exampleArr || [], // Template variable values
+      token: token, // JWT token for authentication
+    };
+
+    // Optional media URI for media templates
+    if (mediaUri) {
+      payload.mediaUri = mediaUri;
+    }
+
+    // Send to WACRM endpoint which forwards to WhatsApp Cloud API
+    const response = await axios.post(WACRM_URL, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${WACRM_PROVIDER.apiKey || ""}`,
+      },
+      timeout: 30000, // 30 second timeout
+    });
+
+    return {
+      success: true,
+      provider: WACRM_PROVIDER.name,
+      response: response.data,
+      status: response.status,
+    };
+  } catch (error) {
+    throw {
+      success: false,
+      provider: WACRM_PROVIDER.name,
+      error: error.message,
+      details: error.response?.data,
+      status: error.response?.status,
+    };
+  }
 }
 
 /**
  * Get phone number from Student or Lead based on userid/family_id/lead_id
- * Follows the same pattern as existing WhatsApp message sending logic
+ * Optimized with field selection for better performance
  * 
  * @param {Object} params
  * @param {string} params.userid - Student userid (same as family_id)
@@ -185,31 +98,24 @@ async function sendViaWACRM({ to, templateName, exampleArr, token, mediaUri }) {
  * @returns {Promise<string|null>} Phone number or null if not found
  */
 export async function getPhoneNumberFromDatabase({ userid, family_id, lead_id }) {
-  const Student = (await import("@/models/Student")).default;
-  const LeadsForm = (await import("@/models/LeadsForm")).default;
-  const connectDB = (await import("@/config/db")).default;
-
   await connectDB();
 
   // Priority 1: Check family_id or userid (both refer to Student table)
   const familyId = family_id || userid;
   if (familyId) {
-    const student = await Student.findOne({ userid: familyId });
-    if (student && student.phonenumber) {
-      console.log(`Phone number found from Student table (family_id/userid: ${familyId}): ${student.phonenumber}`);
+    const student = await Student.findOne({ userid: familyId }).select("phonenumber").lean();
+    if (student?.phonenumber) {
       return student.phonenumber;
     }
   }
 
   // Priority 2: Check lead_id (LeadsForm table)
   if (lead_id) {
-    const lead = await LeadsForm.findOne({ LEAD_ID: lead_id });
-    if (lead && lead.PHONE_NO) {
-      console.log(`Phone number found from LeadsForm table (lead_id: ${lead_id}): ${lead.PHONE_NO}`);
+    const lead = await LeadsForm.findOne({ LEAD_ID: lead_id }).select("PHONE_NO").lean();
+    if (lead?.PHONE_NO) {
       return lead.PHONE_NO;
     }
   }
 
-  console.log(`No phone number found for userid: ${userid}, family_id: ${family_id}, lead_id: ${lead_id}`);
   return null;
 }

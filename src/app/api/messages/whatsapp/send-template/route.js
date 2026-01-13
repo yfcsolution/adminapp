@@ -3,26 +3,11 @@
 // This endpoint sends approved WhatsApp templates to users via Meta's Cloud API
 import { NextResponse } from "next/server";
 import { sendWhatsAppMessage, getPhoneNumberFromDatabase } from "@/utils/whatsappSender";
-import { getCurrentServer } from "@/config/getCurrentServer";
 import connectDB from "@/config/db";
 
 export async function POST(req) {
   try {
     await connectDB();
-    const server = await getCurrentServer();
-
-    // Only allow template sending via WACRM (WhatsApp Cloud API)
-    // WhatsApp Cloud API templates require pre-approval from Meta
-    if (server !== "wacrm") {
-      return NextResponse.json(
-        {
-          error: "WhatsApp Cloud API template messages are only available via WACRM provider",
-          currentProvider: server,
-          note: "WACRM uses Meta's official WhatsApp Business API (WhatsApp Cloud API) for templates",
-        },
-        { status: 400 }
-      );
-    }
 
     const {
       sendTo,
@@ -83,8 +68,8 @@ export async function POST(req) {
       }
     }
 
-    // Format phone number (ensure it starts with +)
-    if (!phoneNumber.startsWith("+")) {
+    // Format phone number to E.164 format
+    if (phoneNumber && !phoneNumber.startsWith("+")) {
       phoneNumber = `+${phoneNumber}`;
     }
 
