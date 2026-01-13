@@ -1,7 +1,7 @@
 # ERP API Testing Script for PowerShell
 # Run with: .\test-erp-api.ps1
 
-$ERP_BASE_URL = "https://erp.yourfuturecampus.com/ords"
+$ERP_BASE_URL = "https://sss.yourfuturecampus.com:8090/apeks/apps"
 
 Write-Host "`n============================================================" -ForegroundColor Cyan
 Write-Host "🚀 ERP API Testing Suite (PowerShell)" -ForegroundColor Cyan
