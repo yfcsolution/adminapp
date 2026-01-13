@@ -134,36 +134,42 @@ async function sendViaWaserver({ to, message, appkey, template_id }) {
 }
 
 /**
- * Send template message via WACRM
+ * Send WhatsApp Cloud API template message via WACRM
+ * WACRM is a wrapper around Meta's official WhatsApp Business API
+ * Templates must be pre-approved by Meta before use
  */
 async function sendViaWACRM({ to, templateName, exampleArr, token, mediaUri }) {
   const provider = getWhatsAppProvider("wacrm");
   const url = getProviderUrl("wacrm", "sendTemplate");
 
   if (!token) {
-    throw new Error("WACRM API token is required");
+    throw new Error("WACRM API token (JWT) is required for WhatsApp Cloud API");
   }
 
-  // WACRM requires templateName, but if only message is provided, use a default template
-  // In production, you should always provide templateName
-  const finalTemplateName = templateName || "custom_message";
-  const finalExampleArr = exampleArr || (message ? [message] : []);
+  if (!templateName) {
+    throw new Error("Template name is required. Templates must be pre-approved by Meta.");
+  }
 
+  // WhatsApp Cloud API template payload
+  // templateName: Pre-approved template name from Meta
+  // exampleArr: Array of template variable values
   const payload = {
-    sendTo: to,
-    templetName: finalTemplateName,
-    exampleArr: finalExampleArr,
-    token: token,
+    sendTo: to, // Phone number in E.164 format (e.g., +923130541339)
+    templetName: templateName, // Pre-approved template name
+    exampleArr: exampleArr || [], // Template variable values
+    token: token, // JWT token for authentication
   };
 
+  // Optional media URI for media templates (images, videos, documents)
   if (mediaUri) {
     payload.mediaUri = mediaUri;
   }
 
+  // Send to WACRM endpoint which forwards to WhatsApp Cloud API
   return await axios.post(url, payload, {
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${provider.apiKey || ""}`,
+      Authorization: `Bearer ${provider.apiKey || ""}`, // WACRM API key
     },
   });
 }

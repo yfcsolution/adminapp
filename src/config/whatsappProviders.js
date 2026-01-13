@@ -26,12 +26,12 @@ export const WHATSAPP_PROVIDERS = {
     }
   },
   wacrm: {
-    name: "WACRM",
-    type: "third-party",
+    name: "WACRM (WhatsApp Cloud API)",
+    type: "whatsapp-cloud-api", // Meta's official WhatsApp Business API
     baseUrl: "https://wacrm.yfcampus.com/api/v1",
     apiKey: process.env.WHATSAPP_WACRM_API_KEY || "",
     endpoints: {
-      sendTemplate: "/send_templet"
+      sendTemplate: "/send_templet" // WhatsApp Cloud API template endpoint
     }
   }
 };

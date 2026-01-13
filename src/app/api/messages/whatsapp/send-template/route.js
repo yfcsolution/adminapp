@@ -1,4 +1,6 @@
-// API Route for sending WhatsApp template messages via WACRM
+// API Route for sending WhatsApp Cloud API template messages via WACRM
+// WACRM is a wrapper around Meta's official WhatsApp Business API (WhatsApp Cloud API)
+// This endpoint sends approved WhatsApp templates to users via Meta's Cloud API
 import { NextResponse } from "next/server";
 import { sendWhatsAppMessage, getPhoneNumberFromDatabase } from "@/utils/whatsappSender";
 import { getCurrentServer } from "@/config/getCurrentServer";
@@ -9,12 +11,14 @@ export async function POST(req) {
     await connectDB();
     const server = await getCurrentServer();
 
-    // Only allow template sending via WACRM
+    // Only allow template sending via WACRM (WhatsApp Cloud API)
+    // WhatsApp Cloud API templates require pre-approval from Meta
     if (server !== "wacrm") {
       return NextResponse.json(
         {
-          error: "Template messages are only available via WACRM provider",
+          error: "WhatsApp Cloud API template messages are only available via WACRM provider",
           currentProvider: server,
+          note: "WACRM uses Meta's official WhatsApp Business API (WhatsApp Cloud API) for templates",
         },
         { status: 400 }
       );
@@ -31,17 +35,23 @@ export async function POST(req) {
       mediaUri,
     } = await req.json();
 
-    // Validate required fields
+    // Validate required fields for WhatsApp Cloud API
     if (!templateName) {
       return NextResponse.json(
-        { error: "templateName is required" },
+        { 
+          error: "templateName is required",
+          note: "Template must be pre-approved in Meta's WhatsApp Business Manager"
+        },
         { status: 400 }
       );
     }
 
     if (!token) {
       return NextResponse.json(
-        { error: "token is required for WACRM API" },
+        { 
+          error: "token (JWT) is required for WhatsApp Cloud API",
+          note: "JWT token is required for authentication with Meta's WhatsApp Cloud API"
+        },
         { status: 400 }
       );
     }
