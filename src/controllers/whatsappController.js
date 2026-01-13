@@ -72,16 +72,24 @@ export const handleWhatsappMessage = async (req) => {
 // handle whatsapp message leads
 export const handleWhatsappMessageLeads = async (req) => {
   try {
-    // Extract template_id and userid from request body
+    // Extract template_id, appkey, and lead_id from request body
+    // Follows same pattern: external API sends lead_id, we lookup phone from LeadsForm
     const { template_id, appkey, lead_id } = await req.json();
 
-    // Retrieve user details based on userid
-    const user = await LeadsForm.findOne({ LEAD_ID: lead_id });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!lead_id) {
+      return NextResponse.json(
+        { error: "lead_id is required" },
+        { status: 400 }
+      );
     }
 
-    // Extract mobile number from user data
+    // Retrieve lead details based on lead_id (same pattern as existing code)
+    const user = await LeadsForm.findOne({ LEAD_ID: lead_id });
+    if (!user) {
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    }
+
+    // Extract mobile number from lead data (PHONE_NO field in LeadsForm)
     const number = user.PHONE_NO;
 
     // Send WhatsApp message using unified sender

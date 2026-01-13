@@ -23,6 +23,7 @@ export async function POST(req) {
     const {
       sendTo,
       userid,
+      family_id,
       lead_id,
       templateName,
       exampleArr,
@@ -45,16 +46,28 @@ export async function POST(req) {
       );
     }
 
-    // Get phone number
+    // Get phone number - follows same pattern as existing WhatsApp endpoints
+    // Priority: sendTo > family_id/userid (Student table) > lead_id (LeadsForm table)
     let phoneNumber = sendTo;
 
     if (!phoneNumber) {
-      // Try to get from database
-      phoneNumber = await getPhoneNumberFromDatabase({ userid, lead_id });
+      // Try to get from database using family_id/userid or lead_id
+      // This matches the pattern used in other WhatsApp endpoints
+      phoneNumber = await getPhoneNumberFromDatabase({ 
+        userid: userid || family_id, 
+        family_id: family_id || userid,
+        lead_id 
+      });
 
       if (!phoneNumber) {
         return NextResponse.json(
-          { error: "Phone number not found. Provide sendTo, userid, or lead_id" },
+          { 
+            error: "Phone number not found. Provide sendTo, family_id/userid, or lead_id",
+            details: {
+              provided: { sendTo, userid, family_id, lead_id },
+              lookup: "Checked Student table (family_id/userid) and LeadsForm table (lead_id)"
+            }
+          },
           { status: 400 }
         );
       }

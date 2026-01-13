@@ -169,28 +169,41 @@ async function sendViaWACRM({ to, templateName, exampleArr, token, mediaUri }) {
 }
 
 /**
- * Get phone number from Student or Lead based on userid/lead_id
+ * Get phone number from Student or Lead based on userid/family_id/lead_id
+ * Follows the same pattern as existing WhatsApp message sending logic
+ * 
+ * @param {Object} params
+ * @param {string} params.userid - Student userid (same as family_id)
+ * @param {string} params.family_id - Family ID (same as userid, looks up Student table)
+ * @param {string} params.lead_id - Lead ID (looks up LeadsForm table)
+ * @returns {Promise<string|null>} Phone number or null if not found
  */
-export async function getPhoneNumberFromDatabase({ userid, lead_id }) {
+export async function getPhoneNumberFromDatabase({ userid, family_id, lead_id }) {
   const Student = (await import("@/models/Student")).default;
   const LeadsForm = (await import("@/models/LeadsForm")).default;
   const connectDB = (await import("@/config/db")).default;
 
   await connectDB();
 
-  if (userid) {
-    const student = await Student.findOne({ userid });
+  // Priority 1: Check family_id or userid (both refer to Student table)
+  const familyId = family_id || userid;
+  if (familyId) {
+    const student = await Student.findOne({ userid: familyId });
     if (student && student.phonenumber) {
+      console.log(`Phone number found from Student table (family_id/userid: ${familyId}): ${student.phonenumber}`);
       return student.phonenumber;
     }
   }
 
+  // Priority 2: Check lead_id (LeadsForm table)
   if (lead_id) {
     const lead = await LeadsForm.findOne({ LEAD_ID: lead_id });
     if (lead && lead.PHONE_NO) {
+      console.log(`Phone number found from LeadsForm table (lead_id: ${lead_id}): ${lead.PHONE_NO}`);
       return lead.PHONE_NO;
     }
   }
 
+  console.log(`No phone number found for userid: ${userid}, family_id: ${family_id}, lead_id: ${lead_id}`);
   return null;
 }
