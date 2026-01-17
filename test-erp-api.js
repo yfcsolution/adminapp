@@ -8,7 +8,7 @@
 const axios = require('axios');
 
 // ERP Configuration
-const ERP_BASE_URL = 'https://sss.yourfuturecampus.com:8090/apeks/apps';
+const ERP_BASE_URL = 'https://erp.yourfuturecampus.com/ords';
 
 // Test results
 const results = {
