@@ -106,7 +106,7 @@ $leadsData = @{
     WHATSAPP_STATUS = "N"
 }
 Test-Endpoint -Name "Leads Insert Endpoint" `
-    -Url "$ERP_BASE_URL/erp/YfcLeads/insertleads" `
+    -Url "$ERP_BASE_URL/yfcerp/YfcLeads/insertleads" `
     -Method "POST" `
     -Body $leadsData
 
@@ -117,7 +117,7 @@ $paymentData = @{
     URL_LINK = "https://sp.ilmulquran.com/student/invoice/TEST_FAMILY_123/TEST_ID"
 }
 Test-Endpoint -Name "Payment Links Endpoint" `
-    -Url "$ERP_BASE_URL/erp/family_paymentlink/postdata" `
+    -Url "$ERP_BASE_URL/yfcerp/family_paymentlink/postdata" `
     -Method "POST" `
     -Body $paymentData
 
@@ -127,22 +127,22 @@ $testUserId = "TEST_USER"
 $testStudentId = "TEST_STUDENT"
 $currentDate = Get-Date -Format "yyyy-MM-dd"
 $oneMonthAgo = (Get-Date).AddMonths(-1).ToString("yyyy-MM-dd")
-$classHistoryUrl = "$ERP_BASE_URL/erp/classhistory/getdata?P_USER_ID=$testUserId&P_STUDENT_ID=$testStudentId&P_FROM_DATE=$oneMonthAgo&P_TO_DATE=$currentDate"
+$classHistoryUrl = "$ERP_BASE_URL/yfcerp/classhistory/getdata?P_USER_ID=$testUserId&P_STUDENT_ID=$testStudentId&P_FROM_DATE=$oneMonthAgo&P_TO_DATE=$currentDate"
 Test-Endpoint -Name "Class History Endpoint" -Url $classHistoryUrl
 
 # Test 5: Class Schedule
 Write-Host "`n📅 Testing Class Schedule Endpoint..." -ForegroundColor Cyan
-$classScheduleUrl = "$ERP_BASE_URL/erp/classschedule/getdata/?P_USER_ID=$testUserId"
+$classScheduleUrl = "$ERP_BASE_URL/yfcerp/classschedule/getdata/?P_USER_ID=$testUserId"
 Test-Endpoint -Name "Class Schedule Endpoint" -Url $classScheduleUrl
 
 # Test 6: Invoice Info
 Write-Host "`n🧾 Testing Invoice Info Endpoint..." -ForegroundColor Cyan
-$invoiceUrl = "$ERP_BASE_URL/erp/invoiceinfo/getdata?P_USER_ID=$testUserId"
+$invoiceUrl = "$ERP_BASE_URL/yfcerp/invoiceinfo/getdata?P_USER_ID=$testUserId"
 Test-Endpoint -Name "Invoice Info Endpoint" -Url $invoiceUrl
 
 # Test 7: Payment History
 Write-Host "`n💰 Testing Payment History Endpoint..." -ForegroundColor Cyan
-$paymentHistoryUrl = "$ERP_BASE_URL/erp/paymenthistory/getdata?P_USER_ID=$testUserId"
+$paymentHistoryUrl = "$ERP_BASE_URL/yfcerp/paymenthistory/getdata?P_USER_ID=$testUserId"
 Test-Endpoint -Name "Payment History Endpoint" -Url $paymentHistoryUrl
 
 # Test 8: Notes
@@ -153,7 +153,7 @@ $notesData = @{
     CREATED_BY = "API_TEST"
 }
 Test-Endpoint -Name "Notes Endpoint" `
-    -Url "$ERP_BASE_URL/erp/notes/postdata" `
+    -Url "$ERP_BASE_URL/yfcerp/notes/postdata" `
     -Method "POST" `
     -Body $notesData
 
@@ -165,13 +165,13 @@ $whatsappData = @{
     FROM = "TEST_USER"
 }
 Test-Endpoint -Name "WhatsApp Conversations Endpoint" `
-    -Url "$ERP_BASE_URL/erp/waconversations/insert/" `
+    -Url "$ERP_BASE_URL/yfcerp/waconversations/insert/" `
     -Method "POST" `
     -Body $whatsappData
 
 # Test 10: Response Time
 Write-Host "`n⏱️  Testing Response Time..." -ForegroundColor Cyan
-$responseTimeTest = Test-Endpoint -Name "Response Time" -Url "$ERP_BASE_URL/erp/classhistory/getdata?P_USER_ID=TEST"
+$responseTimeTest = Test-Endpoint -Name "Response Time" -Url "$ERP_BASE_URL/yfcerp/classhistory/getdata?P_USER_ID=TEST"
 if ($responseTimeTest.Time -gt 3000) {
     Write-Host "   ⚠️  Response time is slow: $([math]::Round($responseTimeTest.Time))ms" -ForegroundColor Yellow
 }

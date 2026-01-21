@@ -34,7 +34,7 @@ export async function POST(req) {
 
         // Send the lead data to the specified endpoint
         const response = await axios.post(
-          `${ERP_BASE_URL}/erp/YfcLeads/insertleads`,
+          `${ERP_BASE_URL}/yfcerp/YfcLeads/insertleads`,
           leadData
         );
         if (response.status == 200) {

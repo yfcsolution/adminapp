@@ -92,7 +92,7 @@ webhookSchema.methods.sendToOracle = async function () {
 
   try {
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/whatsapp/insert/`,
+      `${ERP_BASE_URL}/yfcerp/whatsapp/insert/`,
       data
     );
     if (response.status === 200) {

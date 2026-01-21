@@ -500,7 +500,7 @@ export const handleLeadsAdditionalData = async (req) => {
 
     // Send data to the external API
     const response = await fetch(
-      `${ERP_BASE_URL}/erp/addstudent/postdata`,
+      `${ERP_BASE_URL}/yfcerp/addstudent/postdata`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

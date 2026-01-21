@@ -26,7 +26,7 @@ export const GET = async () => {
 
         try {
           const response = await axios.post(
-            `${ERP_BASE_URL}/erp/family_paymentlink/postdata`,
+            `${ERP_BASE_URL}/yfcerp/family_paymentlink/postdata`,
             {
               FAMILY_ID: userid,
               URL_LINK: paymentLink, // Changed from duplicate FAMILY_ID

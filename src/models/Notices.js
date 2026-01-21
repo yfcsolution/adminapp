@@ -56,7 +56,7 @@ NoticesSchema.methods.syncToExternalAPI = async function (
     };
 
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/notes/postdata`,
+      `${ERP_BASE_URL}/yfcerp/notes/postdata`,
       payload
     );
 

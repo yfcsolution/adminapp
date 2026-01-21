@@ -94,7 +94,7 @@ curl -X OPTIONS http://localhost:3000/api/leads/manual-sync \
 
 #### Test Direct ERP API:
 ```bash
-curl -X POST https://erp.yourfuturecampus.com/ords/erp/YfcLeads/insertleads \
+curl -X POST https://erp.yourfuturecampus.com/ords/yfcerp/YfcLeads/insertleads \
   -H "Content-Type: application/json" \
   -d '{
     "LEAD_ID": "TEST_123",

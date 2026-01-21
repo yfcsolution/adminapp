@@ -97,7 +97,7 @@ async function testLeadsInsert() {
 
   try {
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/YfcLeads/insertleads`,
+      `${ERP_BASE_URL}/yfcerp/YfcLeads/insertleads`,
       testData,
       {
         headers: {
@@ -137,7 +137,7 @@ async function testPaymentLinks() {
 
   try {
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/family_paymentlink/postdata`,
+      `${ERP_BASE_URL}/yfcerp/family_paymentlink/postdata`,
       testData,
       {
         headers: {
@@ -179,7 +179,7 @@ async function testClassHistory() {
 
   try {
     const response = await axios.get(
-      `${ERP_BASE_URL}/erp/classhistory/getdata?P_USER_ID=${testUserId}&P_STUDENT_ID=${testStudentId}&P_FROM_DATE=${fromDate}&P_TO_DATE=${currentDate}`,
+      `${ERP_BASE_URL}/yfcerp/classhistory/getdata?P_USER_ID=${testUserId}&P_STUDENT_ID=${testStudentId}&P_FROM_DATE=${fromDate}&P_TO_DATE=${currentDate}`,
       {
         timeout: 15000,
         validateStatus: () => true
@@ -212,7 +212,7 @@ async function testClassSchedule() {
 
   try {
     const response = await axios.get(
-      `${ERP_BASE_URL}/erp/classschedule/getdata/?P_USER_ID=${testUserId}`,
+      `${ERP_BASE_URL}/yfcerp/classschedule/getdata/?P_USER_ID=${testUserId}`,
       {
         timeout: 15000,
         validateStatus: () => true
@@ -245,7 +245,7 @@ async function testInvoiceInfo() {
 
   try {
     const response = await axios.get(
-      `${ERP_BASE_URL}/erp/invoiceinfo/getdata?P_USER_ID=${testUserId}`,
+      `${ERP_BASE_URL}/yfcerp/invoiceinfo/getdata?P_USER_ID=${testUserId}`,
       {
         timeout: 15000,
         validateStatus: () => true
@@ -278,7 +278,7 @@ async function testPaymentHistory() {
 
   try {
     const response = await axios.get(
-      `${ERP_BASE_URL}/erp/paymenthistory/getdata?P_USER_ID=${testUserId}`,
+      `${ERP_BASE_URL}/yfcerp/paymenthistory/getdata?P_USER_ID=${testUserId}`,
       {
         timeout: 15000,
         validateStatus: () => true
@@ -315,7 +315,7 @@ async function testNotes() {
 
   try {
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/notes/postdata`,
+      `${ERP_BASE_URL}/yfcerp/notes/postdata`,
       testData,
       {
         headers: {
@@ -356,7 +356,7 @@ async function testWhatsAppConversations() {
 
   try {
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/waconversations/insert/`,
+      `${ERP_BASE_URL}/yfcerp/waconversations/insert/`,
       testData,
       {
         headers: {
@@ -392,7 +392,7 @@ async function testResponseTime() {
   const startTime = Date.now();
   
   try {
-    await axios.get(`${ERP_BASE_URL}/erp/classhistory/getdata?P_USER_ID=TEST`, {
+    await axios.get(`${ERP_BASE_URL}/yfcerp/classhistory/getdata?P_USER_ID=TEST`, {
       timeout: 10000,
       validateStatus: () => true
     });

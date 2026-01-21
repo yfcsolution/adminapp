@@ -34,7 +34,7 @@ function logTest(name, success, details = '') {
 // Test 1: Check if ERP endpoint is accessible
 async function testERPEndpoint() {
   try {
-    const response = await axios.get(`${ERP_BASE_URL}/erp/YfcLeads/insertleads`, {
+    const response = await axios.get(`${ERP_BASE_URL}/yfcerp/YfcLeads/insertleads`, {
       validateStatus: () => true, // Accept any status code
       timeout: 5000,
     });
@@ -180,7 +180,7 @@ async function testDirectERPAPI() {
     };
 
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/YfcLeads/insertleads`,
+      `${ERP_BASE_URL}/yfcerp/YfcLeads/insertleads`,
       testData,
       {
         headers: {

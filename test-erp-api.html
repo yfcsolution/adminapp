@@ -325,7 +325,7 @@
             };
 
             try {
-                const response = await fetch(`${erpUrl()}/erp/YfcLeads/insertleads`, {
+                const response = await fetch(`${erpUrl()}/yfcerp/YfcLeads/insertleads`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(testData)
@@ -355,7 +355,7 @@
             };
 
             try {
-                const response = await fetch(`${erpUrl()}/erp/family_paymentlink/postdata`, {
+                const response = await fetch(`${erpUrl()}/yfcerp/family_paymentlink/postdata`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(testData)
@@ -388,7 +388,7 @@
 
             try {
                 const response = await fetch(
-                    `${erpUrl()}/erp/classhistory/getdata?P_USER_ID=${testUserId}&P_STUDENT_ID=${testStudentId}&P_FROM_DATE=${fromDate}&P_TO_DATE=${currentDate}`
+                    `${erpUrl()}/yfcerp/classhistory/getdata?P_USER_ID=${testUserId}&P_STUDENT_ID=${testStudentId}&P_FROM_DATE=${fromDate}&P_TO_DATE=${currentDate}`
                 );
                 const data = await response.json();
                 showResult('classHistoryResult', {
@@ -404,7 +404,7 @@
         async function testClassSchedule() {
             const testUserId = 'TEST_USER';
             try {
-                const response = await fetch(`${erpUrl()}/erp/classschedule/getdata/?P_USER_ID=${testUserId}`);
+                const response = await fetch(`${erpUrl()}/yfcerp/classschedule/getdata/?P_USER_ID=${testUserId}`);
                 const data = await response.json();
                 showResult('classScheduleResult', {
                     status: response.status,
@@ -419,7 +419,7 @@
         async function testInvoiceInfo() {
             const testUserId = 'TEST_USER';
             try {
-                const response = await fetch(`${erpUrl()}/erp/invoiceinfo/getdata?P_USER_ID=${testUserId}`);
+                const response = await fetch(`${erpUrl()}/yfcerp/invoiceinfo/getdata?P_USER_ID=${testUserId}`);
                 const data = await response.json();
                 showResult('invoiceResult', {
                     status: response.status,
@@ -434,7 +434,7 @@
         async function testPaymentHistory() {
             const testUserId = 'TEST_USER';
             try {
-                const response = await fetch(`${erpUrl()}/erp/paymenthistory/getdata?P_USER_ID=${testUserId}`);
+                const response = await fetch(`${erpUrl()}/yfcerp/paymenthistory/getdata?P_USER_ID=${testUserId}`);
                 const data = await response.json();
                 showResult('paymentHistoryResult', {
                     status: response.status,
@@ -454,7 +454,7 @@
             };
 
             try {
-                const response = await fetch(`${erpUrl()}/erp/notes/postdata`, {
+                const response = await fetch(`${erpUrl()}/yfcerp/notes/postdata`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(testData)
@@ -485,7 +485,7 @@
             };
 
             try {
-                const response = await fetch(`${erpUrl()}/erp/waconversations/insert/`, {
+                const response = await fetch(`${erpUrl()}/yfcerp/waconversations/insert/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(testData)
@@ -511,7 +511,7 @@
         async function testResponseTime() {
             const startTime = Date.now();
             try {
-                const response = await fetch(`${erpUrl()}/erp/classhistory/getdata?P_USER_ID=TEST`);
+                const response = await fetch(`${erpUrl()}/yfcerp/classhistory/getdata?P_USER_ID=TEST`);
                 const responseTime = Date.now() - startTime;
                 const isGood = responseTime < 3000;
                 showResult('responseTimeResult', {

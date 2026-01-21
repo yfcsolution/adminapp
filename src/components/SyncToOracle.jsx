@@ -38,7 +38,7 @@ export const syncDataToOracle = async (lead) => {
 
     // Make the POST request using Axios
     const response = await axios.post(
-      `${ERP_BASE_URL}/erp/YfcLeads/insertleads`,
+      `${ERP_BASE_URL}/yfcerp/YfcLeads/insertleads`,
       requestBody,
       {
         headers: {

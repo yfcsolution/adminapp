@@ -45,7 +45,7 @@ export async function POST(req) {
 
     // Fetch data from the external API
     const response = await axios.get(
-      `${ERP_BASE_URL}/erp/classhistory/getdata?P_USER_ID=${userid}&P_STUDENT_ID=${studentId}&P_FROM_DATE=${currentDate}&P_TO_DATE=${oneMonthAgo}`
+      `${ERP_BASE_URL}/yfcerp/classhistory/getdata?P_USER_ID=${userid}&P_STUDENT_ID=${studentId}&P_FROM_DATE=${currentDate}&P_TO_DATE=${oneMonthAgo}`
     );
 
     const data = response.data.items; // Ensure this path is correct based on the API response structure

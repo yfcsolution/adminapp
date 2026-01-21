@@ -19,7 +19,7 @@ $body = @{
     WHATSAPP_STATUS = "N"
 } | ConvertTo-Json
 
-Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/YfcLeads/insertleads" `
+Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/YfcLeads/insertleads" `
     -Method POST `
     -Body $body `
     -ContentType "application/json"
@@ -27,7 +27,7 @@ Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/YfcLeads/inser
 
 ### Test Class History (GET)
 ```powershell
-Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/classhistory/getdata?P_USER_ID=TEST" `
+Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/classhistory/getdata?P_USER_ID=TEST" `
     -Method GET
 ```
 
@@ -38,7 +38,7 @@ $body = @{
     URL_LINK = "https://sp.ilmulquran.com/student/invoice/TEST_FAMILY_123/TEST_ID"
 } | ConvertTo-Json
 
-Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/family_paymentlink/postdata" `
+Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/family_paymentlink/postdata" `
     -Method POST `
     -Body $body `
     -ContentType "application/json"
@@ -46,19 +46,19 @@ Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/family_payment
 
 ### Test Class Schedule
 ```powershell
-Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/classschedule/getdata/?P_USER_ID=TEST_USER" `
+Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/classschedule/getdata/?P_USER_ID=TEST_USER" `
     -Method GET
 ```
 
 ### Test Invoice Info
 ```powershell
-Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/invoiceinfo/getdata?P_USER_ID=TEST_USER" `
+Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/invoiceinfo/getdata?P_USER_ID=TEST_USER" `
     -Method GET
 ```
 
 ### Test Payment History
 ```powershell
-Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/paymenthistory/getdata?P_USER_ID=TEST_USER" `
+Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/paymenthistory/getdata?P_USER_ID=TEST_USER" `
     -Method GET
 ```
 
@@ -73,7 +73,7 @@ Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/paymenthistory
 To see the full response:
 
 ```powershell
-$response = Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/YfcLeads/insertleads" `
+$response = Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/YfcLeads/insertleads" `
     -Method POST `
     -Body $body `
     -ContentType "application/json"
@@ -92,7 +92,7 @@ $response.Content | ConvertFrom-Json
 
 ```powershell
 try {
-    $response = Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/erp/YfcLeads/insertleads" `
+    $response = Invoke-WebRequest -Uri "https://erp.yourfuturecampus.com/ords/yfcerp/YfcLeads/insertleads" `
         -Method POST `
         -Body $body `
         -ContentType "application/json"

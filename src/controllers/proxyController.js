@@ -18,7 +18,7 @@ export const handleClassesHistory = async (req) => {
 
     // Define the external API URL
     const EXTERNAL_API_URL =
-      `${ERP_BASE_URL}/erp/classhistory/getdata`;
+      `${ERP_BASE_URL}/yfcerp/classhistory/getdata`;
 
     // Make the request to the external API
     const response = await axios.get(EXTERNAL_API_URL, {

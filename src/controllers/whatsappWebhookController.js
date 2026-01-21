@@ -86,7 +86,7 @@ export const handleUnSyncedLogs = async () => {
       try {
         // Send the data to the Oracle API
         const response = await axios.post(
-          `${ERP_BASE_URL}/erp/waconversations/insert/`,
+          `${ERP_BASE_URL}/yfcerp/waconversations/insert/`,
           data
         );
 

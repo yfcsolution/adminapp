@@ -13,7 +13,7 @@ export async function POST(req) {
 
     // Fetch data from the external API
     const response = await axios.get(
-      `${ERP_BASE_URL}/erp/getdata/yfc/?P_USER_ID=${userid}`
+      `${ERP_BASE_URL}/yfcerp/getdata/yfc/?P_USER_ID=${userid}`
     );
 
     const data = response.data.items; // Ensure this path is correct based on the API response structure
