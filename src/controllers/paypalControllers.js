@@ -7,16 +7,17 @@ import {
   LogLevel,
 } from "@paypal/paypal-server-sdk";
 
-// PayPal credentials from environment variables
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET } = process.env;
+// PayPal credentials from environment variables (use safe fallbacks in build)
+const PAYPAL_CLIENT_ID =
+  process.env.PAYPAL_CLIENT_ID || "DUMMY_PAYPAL_CLIENT_ID";
+const PAYPAL_CLIENT_SECRET =
+  process.env.PAYPAL_CLIENT_SECRET || "DUMMY_PAYPAL_CLIENT_SECRET";
 
-if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-  throw new Error(
-    "PayPal client credentials are missing from environment variables"
-  );
-}
+// Flag to know if real credentials are configured
+const isPaypalConfigured =
+  !!process.env.PAYPAL_CLIENT_ID && !!process.env.PAYPAL_CLIENT_SECRET;
 
-// Initialize PayPal Client
+// Initialize PayPal Client (will only work correctly when real credentials are set)
 const client = new Client({
   clientCredentialsAuthCredentials: {
     oAuthClientId: PAYPAL_CLIENT_ID,
@@ -55,6 +56,14 @@ export const createOrder = async (amount, currency) => {
     prefer: "return=minimal",
   };
 
+  if (!isPaypalConfigured) {
+    // Graceful error when PayPal is not configured instead of crashing build
+    return NextResponse.json(
+      { error: "PayPal is not configured on this deployment." },
+      { status: 503 }
+    );
+  }
+
   try {
     const { body, ...httpResponse } = await ordersController.ordersCreate(
       collect
@@ -75,6 +84,13 @@ export const createOrder = async (amount, currency) => {
 
 // Handle POST request to create PayPal order
 export const handlePaypalOrders = async (req) => {
+  if (!isPaypalConfigured) {
+    return NextResponse.json(
+      { error: "PayPal is not configured on this deployment." },
+      { status: 503 }
+    );
+  }
+
   try {
     const { amount, currency } = await req.json();
 
