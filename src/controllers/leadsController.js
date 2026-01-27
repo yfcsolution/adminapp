@@ -722,19 +722,44 @@ export const handleSecondMessageSending = async (req) => {
 // fetch leadsdata
 export const fetchLeadsData = async (req) => {
   try {
-    // Fetch all leads from the database
-    const leads = await LeadsForm.find().sort({ _id: -1 });
-    // No filters, just return all leads
+    // Support both GET (query params) and POST (JSON body) for pagination
+    let page = 1;
+    let pageSize = 10;
 
-    if (leads.length === 0) {
-      return NextResponse.json({ message: "No leads found" }, { status: 404 });
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        page = Number(body.page) || page;
+        pageSize = Number(body.pageSize) || pageSize;
+      } catch {
+        // Ignore JSON parse errors and fall back to defaults
+      }
+    } else if (req.method === "GET") {
+      const url = new URL(req.url);
+      page = Number(url.searchParams.get("page")) || page;
+      pageSize = Number(url.searchParams.get("pageSize")) || pageSize;
     }
 
-    // Return the fetched leads data
+    const skip = (page - 1) * pageSize;
+
+    const [leads, totalLeads] = await Promise.all([
+      LeadsForm.find().sort({ _id: -1 }).skip(skip).limit(pageSize),
+      LeadsForm.countDocuments(),
+    ]);
+
+    // Return empty array with total 0 instead of 404 to keep UI simple
+    if (!leads || leads.length === 0) {
+      return NextResponse.json(
+        { message: "No leads found", data: [], total: 0 },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json(
       {
         message: "Leads fetched successfully",
         data: leads,
+        total: totalLeads,
       },
       { status: 200 }
     );
