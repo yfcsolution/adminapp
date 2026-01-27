@@ -6,8 +6,8 @@ import { Readable } from "stream"; // To convert file to readable stream
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: "dqg91j1eb",
-  api_key: "314791842446172",
-  api_secret: "6d9Adg6Ou7urU15IYJEfhnQvLfo",
+  api_key: process.env.BLOG_API_KEY || "",
+  api_secret: process.env.BLOG_API_SECRET || "",
 });
 
 // POST route for editing an existing blog
