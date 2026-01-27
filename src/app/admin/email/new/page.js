@@ -1,6 +1,6 @@
 "use client";
 import EmailComposer from "@/components/EmailComposer";
-import DashboardLayout from "../../admin_dashboard_layout/layout";
+import DashboardLayout from "../../../admin_dashboard_layout/layout";
 
 export default function NewEmailPage() {
   return (
