@@ -67,7 +67,22 @@ Visit: https://www.random.org/strings/ (generate 32-character alphanumeric strin
 
 ## Step 4: Test the External APIs
 
-### Test WhatsApp API
+### Quick Test (Using Test Scripts)
+
+**PowerShell (Windows):**
+```powershell
+.\test-api.ps1 -ApiKey "YOUR_EXTERNAL_API_KEY" -LeadId 6063 -TemplateName "welcome_message"
+```
+
+**Bash (Linux/Mac):**
+```bash
+chmod +x test-api.sh
+./test-api.sh YOUR_EXTERNAL_API_KEY 6063 welcome_message
+```
+
+### Manual Testing
+
+#### Test WhatsApp API
 
 **PowerShell:**
 ```powershell

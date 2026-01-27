@@ -1,9 +1,46 @@
 import { NextResponse } from "next/server";
-import { transporter } from "@/config/nodemailer";
+import nodemailer from "nodemailer";
 import Student from "@/models/Student";
 import LeadsForm from "@/models/LeadsForm";
 import Email from "@/models/Emails";
+import EmailLog from "@/models/EmailLog";
+import EmailConfig from "@/models/EmailConfig";
 import connectDB from "@/config/db";
+
+// Get email transporter from database config
+async function getEmailTransporter() {
+  await connectDB();
+  const config = await EmailConfig.findOne({ isActive: true }).lean();
+
+  if (!config) {
+    // Fallback to environment variables if no config in database
+    return nodemailer.createTransport({
+      host: process.env.EMAIL_SMTP_HOST || "mail.ilmulquran.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER || "test@ilmulquran.com",
+        pass: process.env.EMAIL_PASSWORD || "2025@Ijaz",
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+  }
+
+  return nodemailer.createTransport({
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpSecure,
+    auth: {
+      user: config.smtpUser,
+      pass: config.smtpPassword,
+    },
+    tls: {
+      rejectUnauthorized: config.tlsRejectUnauthorized !== false,
+    },
+  });
+}
 
 export async function POST(request) {
   await connectDB();
@@ -89,24 +126,43 @@ export async function POST(request) {
       </html>
     `;
 
+    // Get transporter from database config
+    const transporter = await getEmailTransporter();
+    
+    // Get sender email from config
+    const emailConfig = await EmailConfig.findOne({ isActive: true }).lean();
+    const senderEmail = emailConfig?.smtpUser || process.env.EMAIL_USER || "test@ilmulquran.com";
+
     // Send the email with tracking pixel
-    const mailResponse = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: receiver,
-      subject,
-      html: bodyWithTracking,
-      text: body.replace(/<[^>]*>?/gm, ""),
-      headers: {
-        "X-Message-ID": messageId, // Custom header for tracking
-      },
-    });
+    let mailResponse;
+    let emailSent = false;
+    let emailError = null;
+
+    try {
+      mailResponse = await transporter.sendMail({
+        from: senderEmail,
+        to: receiver,
+        subject,
+        html: bodyWithTracking,
+        text: body.replace(/<[^>]*>?/gm, ""),
+        headers: {
+          "X-Message-ID": messageId, // Custom header for tracking
+        },
+      });
+      emailSent = true;
+    } catch (error) {
+      console.error("Error sending email:", error);
+      emailError = error.message;
+      emailSent = false;
+      // Still log the failure
+    }
 
     // Prepare email data for the database
     const emailData = {
       subject,
       body: bodyWithTracking,
       isReply: false,
-      sender: process.env.EMAIL_USER,
+      sender: senderEmail,
       receiver,
       messageId,
       opened: false,
@@ -131,26 +187,57 @@ export async function POST(request) {
       };
     }
 
-    // Save to the database
-    const existingRecord = await Email.findOne(query);
-    if (existingRecord) {
-      await Email.findByIdAndUpdate(existingRecord._id, {
-        $push: { emails: emailData },
-      });
-    } else {
-      await Email.create({
-        emails: [emailData],
-        leadId: identifier.leadId || null,
-        familyId: identifier.familyId || null,
-        to: identifier.receiverEmail || null,
-      });
+    // Save to the Email model (for conversation history)
+    if (emailSent) {
+      const existingRecord = await Email.findOne(query);
+      if (existingRecord) {
+        await Email.findByIdAndUpdate(existingRecord._id, {
+          $push: { emails: emailData },
+        });
+      } else {
+        await Email.create({
+          emails: [emailData],
+          leadId: identifier.leadId || null,
+          familyId: identifier.familyId || null,
+          to: identifier.receiverEmail || null,
+        });
+      }
+    }
+
+    // ALWAYS log to EmailLog (for tracking all outgoing emails)
+    await EmailLog.create({
+      leadId: identifier.leadId || null,
+      userId: identifier.familyId || null,
+      email: receiver,
+      subject,
+      body: bodyWithTracking,
+      type: "manual",
+      status: emailSent ? "success" : "failed",
+      messageId: emailSent ? (mailResponse?.messageId || messageId) : null,
+      error: emailError,
+      response: emailSent ? {
+        accepted: mailResponse?.accepted || [],
+        rejected: mailResponse?.rejected || [],
+      } : null,
+      sentAt: new Date(),
+    });
+
+    if (!emailSent) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to send email",
+          details: emailError,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(
       {
         success: true,
         message: "Email sent and logged successfully",
-        messageId,
+        messageId: mailResponse?.messageId || messageId,
       },
       { status: 200 }
     );

@@ -15,6 +15,7 @@ import EditLeadModal from "@/components/EditLead";
 import LeadChat from "@/components/LeadChat";
 import LeadsEmail from "@/components/LeadsEmail";
 import SendTemplateModal from "@/components/SendTemplateModal";
+import LeadEmailSender from "@/components/LeadEmailSender";
 
 const Page = () => {
   const [activeSection, setActiveSection] = useState("Profile");
@@ -22,6 +23,7 @@ const Page = () => {
   const [leadData, setLeadData] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSendTemplateModalOpen, setIsSendTemplateModalOpen] = useState(false);
+  const [emailRefreshKey, setEmailRefreshKey] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -79,22 +81,30 @@ const Page = () => {
               </div>
             </div>
             {/* Contact Icons */}
-            <div className="flex space-x-4">
+            <div className="flex flex-wrap gap-2">
+              <LeadEmailSender
+                leadId={leadData?.LEAD_ID}
+                leadEmail={leadData?.EMAIL}
+                leadName={leadData?.FULL_NAME}
+                onEmailSent={() => setEmailRefreshKey(prev => prev + 1)}
+              />
               <button
                 onClick={() => setIsSendTemplateModalOpen(true)}
-                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
               >
-                Send Template
+                Send WhatsApp Template
               </button>
               <button
                 onClick={handleEdit}
                 className="text-teal-500 hover:text-teal-700 text-2xl"
+                title="Edit Lead"
               >
                 <FaEdit />
               </button>
               <a
                 href={`mailto:${leadData?.EMAIL}`}
                 className="text-teal-500 hover:text-teal-700 text-2xl"
+                title="Open Email Client"
               >
                 <FaEnvelope />
               </a>
@@ -134,7 +144,7 @@ const Page = () => {
           {activeSection === "Notes" && <Notes leadId={lead_id} />}
           {activeSection === "Profile" && <LeadProfile leadId={lead_id} />}
           {activeSection === "Email Activity" && (
-            <LeadsEmail leadId={lead_id} />
+            <LeadsEmail key={emailRefreshKey} leadId={lead_id} />
           )}
           {activeSection === "Classes" && <LeadsStudents leadId={lead_id} />}
           {activeSection === "Activity Log" && <p>Activity Log will be here</p>}
