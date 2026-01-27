@@ -17,7 +17,9 @@ export async function POST(req) {
 
     await connectDB();
 
-    const { leadId, templateName } = await req.json();
+    const body = await req.json();
+    const leadId = body.leadId || body.lead_id;
+    const templateName = body.templateName || body.template_name;
 
     // Validate required fields
     if (!leadId) {

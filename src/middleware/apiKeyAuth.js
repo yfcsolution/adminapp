@@ -40,6 +40,17 @@ export async function verifyApiKey(req) {
     }
 
     // Use constant-time comparison to prevent timing attacks
+    // First check lengths to avoid errors
+    if (apiKey.length !== expectedApiKey.length) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: "Invalid API key" 
+        },
+        { status: 401 }
+      );
+    }
+
     const isValid = crypto.timingSafeEqual(
       Buffer.from(apiKey),
       Buffer.from(expectedApiKey)

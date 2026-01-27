@@ -51,7 +51,11 @@ x-api-key: YOUR_API_KEY
 
 **Parameters**:
 - `leadId` (number, required): The LEAD_ID of the lead from your database
+  - Also accepts: `lead_id` (for compatibility)
 - `templateName` (string, required): The name of the WhatsApp template (must exist in database and be active)
+  - Also accepts: `template_name` (for compatibility)
+  - **Important**: Use the exact template name as stored in `/admin/whatsapp/templates`
+  - Common mistake: Don't use template IDs or other field names like `teacher_waiting_class_reminder1`
 
 **Success Response** (200):
 ```json
