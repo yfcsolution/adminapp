@@ -1,28 +1,14 @@
 "use client";
-import { useState, useEffect } from "react"; // Added useEffect import
+import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import withAuth from "../common/withAuth";
-import axios from "axios";
-import { useRouter } from "next/navigation";
 
 function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    const getAdminData = async () => {
-      const response = await axios.get("/api/admin-info", {
-        withCredentials: true,
-      });
-      if (response.status !== 200) {
-        router.push("/admin/login");
-      }
-    };
-    getAdminData();
-  }, []);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
