@@ -14,12 +14,14 @@ import { useRouter } from "next/navigation";
 import EditLeadModal from "@/components/EditLead";
 import LeadChat from "@/components/LeadChat";
 import LeadsEmail from "@/components/LeadsEmail";
+import SendTemplateModal from "@/components/SendTemplateModal";
 
 const Page = () => {
   const [activeSection, setActiveSection] = useState("Profile");
   const { lead_id } = useParams(); // Extract lead_id from URL params
   const [leadData, setLeadData] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSendTemplateModalOpen, setIsSendTemplateModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -78,6 +80,12 @@ const Page = () => {
             </div>
             {/* Contact Icons */}
             <div className="flex space-x-4">
+              <button
+                onClick={() => setIsSendTemplateModalOpen(true)}
+                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+              >
+                Send Template
+              </button>
               <button
                 onClick={handleEdit}
                 className="text-teal-500 hover:text-teal-700 text-2xl"
@@ -142,6 +150,17 @@ const Page = () => {
             lead={leadData}
             onClose={() => setIsEditModalOpen(false)}
             onSave={handleSave}
+          />
+        )}
+
+        {/* Send Template Modal */}
+        {isSendTemplateModalOpen && (
+          <SendTemplateModal
+            isOpen={isSendTemplateModalOpen}
+            onClose={() => setIsSendTemplateModalOpen(false)}
+            leadId={leadData?.LEAD_ID}
+            phoneNumber={leadData?.PHONE_NO}
+            email={leadData?.EMAIL}
           />
         )}
       </div>

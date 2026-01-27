@@ -7,6 +7,7 @@ import Webhook from "@/models/whatsappWebhookSchema";
 import DuplicateLeads from "@/models/DuplicateLeads";
 import LeadsStatus from "@/models/LeadsStatus";
 import ERP_BASE_URL from "@/config/erpUrl";
+import connectDB from "@/config/db";
 export const handleLeadsSubmit = async (req) => {
   const {
     LEAD_IP,
@@ -169,7 +170,96 @@ export const handleLeadsSubmit = async (req) => {
         )
       );
 
-    // **Return success response (independent of sync)**
+    // **Auto-send WhatsApp template in the background (non-blocking)**
+    (async () => {
+      try {
+        const AutoSendConfig = (await import("@/models/AutoSendConfig")).default;
+        const { sendAndLogWhatsApp } = await import("@/lib/wacrmService");
+        await connectDB();
+        
+        const whatsappConfig = await AutoSendConfig.findOne({
+          type: "whatsapp",
+          enabled: true,
+        }).lean();
+
+        if (whatsappConfig && whatsappConfig.templateName && whatsappConfig.token) {
+          await sendAndLogWhatsApp({
+            sendTo: PHONE_NO,
+            templateName: whatsappConfig.templateName,
+            templateId: whatsappConfig.templateId,
+            exampleArr: whatsappConfig.exampleArr || [],
+            token: whatsappConfig.token,
+            mediaUri: whatsappConfig.mediaUri,
+            leadId: newFormData.LEAD_ID,
+            type: "auto",
+          });
+          console.log(`Auto WhatsApp sent to lead ${newFormData.LEAD_ID}`);
+        }
+      } catch (error) {
+        console.error("Auto-send WhatsApp failed:", error.message);
+      }
+    })();
+
+    // **Auto-send Email in the background (non-blocking)**
+    (async () => {
+      try {
+        const AutoSendConfig = (await import("@/models/AutoSendConfig")).default;
+        const EmailLog = (await import("@/models/EmailLog")).default;
+        const { transporter } = await import("@/config/nodemailer");
+        await connectDB();
+        
+        const emailConfig = await AutoSendConfig.findOne({
+          type: "email",
+          enabled: true,
+        }).lean();
+
+        if (emailConfig && emailConfig.subject && emailConfig.body && EMAIL) {
+          try {
+            const mailResponse = await transporter.sendMail({
+              from: process.env.EMAIL_USER,
+              to: EMAIL,
+              subject: emailConfig.subject,
+              html: emailConfig.body,
+              text: emailConfig.body.replace(/<[^>]*>?/gm, ""),
+            });
+
+            // Log success
+            await EmailLog.create({
+              leadId: newFormData.LEAD_ID,
+              email: EMAIL,
+              subject: emailConfig.subject,
+              body: emailConfig.body,
+              type: "auto",
+              status: "success",
+              messageId: mailResponse.messageId,
+              response: {
+                accepted: mailResponse.accepted,
+                rejected: mailResponse.rejected,
+              },
+              sentAt: new Date(),
+            });
+            console.log(`Auto email sent to lead ${newFormData.LEAD_ID}`);
+          } catch (emailError) {
+            // Log failure
+            await EmailLog.create({
+              leadId: newFormData.LEAD_ID,
+              email: EMAIL,
+              subject: emailConfig.subject,
+              body: emailConfig.body,
+              type: "auto",
+              status: "failed",
+              error: emailError.message,
+              sentAt: new Date(),
+            });
+            console.error("Auto-send email failed:", emailError.message);
+          }
+        }
+      } catch (error) {
+        console.error("Auto-send email setup failed:", error.message);
+      }
+    })();
+
+    // **Return success response (independent of sync and auto-send)**
     return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
     return NextResponse.json(
