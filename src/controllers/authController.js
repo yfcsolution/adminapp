@@ -461,13 +461,10 @@ export const changeAdminPassword = async (req) => {
 };
 
 // REFRESH ACCESS TOKEN
-export const refreshAccessToken = async (req) => {
+// Uses httpOnly `refreshToken` cookie; no body is required.
+export const refreshAccessToken = async () => {
   const cookieStore = cookies();
-
-  const { refreshToken: incomingRefreshToken } = await req; // Parse JSON body
-  const cookieRefreshToken = cookieStore.get("refreshToken")?.value;
-
-  const incomingToken = incomingRefreshToken || cookieRefreshToken;
+  const incomingToken = cookieStore.get("refreshToken")?.value;
 
   if (!incomingToken) {
     return NextResponse.json(
@@ -524,18 +521,19 @@ export const refreshAccessToken = async (req) => {
   }
 };
 
-// get access token
-export const getAccessToken = async (req) => {
-  const newAccessToken = req.cookies.get("accessToken")?.value;
+// get access token from httpOnly cookie
+export const getAccessToken = async () => {
+  const cookieStore = cookies();
+  const accessToken = cookieStore.get("accessToken")?.value;
 
-  if (newAccessToken) {
-    return NextResponse.json({ accessToken: newAccessToken }, { status: 200 });
-  } else {
-    return NextResponse.json(
-      { message: "You don't have an access token; please login first" },
-      { status: 404 }
-    );
+  if (accessToken) {
+    return NextResponse.json({ accessToken }, { status: 200 });
   }
+
+  return NextResponse.json(
+    { message: "You don't have an access token; please login first" },
+    { status: 404 }
+  );
 };
 
 // fetching students data
