@@ -1,27 +1,32 @@
 // src/hoc/withAuth.js
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from './auth-context';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./auth-context";
 
+/**
+ * Simpler client-side auth guard:
+ * - Trusts the in-memory `accessToken` set on login.
+ * - If there is no token in context, redirect to `/admin/login`.
+ * - Avoids relying on cookie-based APIs that can behave differently on Vercel.
+ *
+ * NOTE: This means a full page refresh will require logging in again,
+ * but it prevents the redirect loop you're seeing after a successful login.
+ */
 const withAuth = (WrappedComponent) => {
   return (props) => {
-    const { accessToken, getAccessToken } = useAuth();
+    const { accessToken } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-      // Attempt to get the access token once on mount
-      const checkAuth = async () => {
-        const token = await getAccessToken();
-        if (!token) {
-          router.push('/admin/login'); // Redirect to login if not authenticated
-        }
-      };
+      if (!accessToken) {
+        router.push("/admin/login");
+      }
+    }, [accessToken, router]);
 
-      checkAuth();
-    }, [getAccessToken, router]);
+    // Render guarded component only when we have a token in context
+    if (!accessToken) return null;
 
-    // Show the component if authenticated, otherwise it will redirect to login
-    return accessToken ? <WrappedComponent {...props} /> : null;
+    return <WrappedComponent {...props} />;
   };
 };
 
