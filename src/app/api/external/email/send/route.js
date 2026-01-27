@@ -40,7 +40,10 @@ export async function POST(req) {
 
     await connectDB();
 
-    const { leadId, subject, body } = await req.json();
+    const body = await req.json();
+    const leadId = body.leadId || body.lead_id;
+    const subject = body.subject;
+    const bodyContent = body.body || body.content;
 
     // Validate required fields
     if (!leadId) {
@@ -53,7 +56,7 @@ export async function POST(req) {
       );
     }
 
-    if (!subject || !body) {
+    if (!subject || !bodyContent) {
       return NextResponse.json(
         {
           success: false,
@@ -106,7 +109,7 @@ export async function POST(req) {
       leadId: lead.LEAD_ID,
       email: lead.EMAIL,
       subject,
-      body,
+      body: bodyContent,
       type: "external_api",
       status: "failed",
       sentAt: new Date(),
@@ -122,8 +125,8 @@ export async function POST(req) {
         from: config.smtpUser,
         to: lead.EMAIL,
         subject,
-        html: body,
-        text: body.replace(/<[^>]*>?/gm, ""),
+        html: bodyContent,
+        text: bodyContent.replace(/<[^>]*>?/gm, ""),
       });
 
       // Log success
