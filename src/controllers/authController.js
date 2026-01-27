@@ -7,17 +7,23 @@ import Student from "@/models/Student";
 import SecretCode from "@/models/secretCodeSchema";
 import RolesSchema from "@/models/RolesSchema";
 import AdminLoginAttempt from "@/models/AdminLoginAttemptSchema";
+
+// Cookie options for access and refresh tokens
+// Note: Next.js expects `maxAge` in seconds, not milliseconds.
 const accessTokenOptions = {
   httpOnly: true,
-  secure: true, // Only send cookie over HTTPS
-  sameSite: "Strict", // Prevent cross-site request forgery
-  maxAge: 15 * 60 * 1000, // 15 minutes in milliseconds
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+  maxAge: 15 * 60, // 15 minutes
 };
+
 const refreshTokenOptions = {
   httpOnly: true,
-  secure: true, // Only send cookie over HTTPS
-  sameSite: "Strict", // Prevent cross-site request forgery
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60, // 7 days
 };
 
 // genrate access and refresh tokens
@@ -294,15 +300,9 @@ export const loginUser = async (req) => {
       { status: 200 }
     );
 
-    // Set cookies in the response
-    response.cookies.set("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-    });
-    response.cookies.set("accessToken", accessToken, {
-      httpOnly: true,
-      secure: true,
-    });
+    // Set cookies in the response (httpOnly, secure in production, sameSite, path)
+    response.cookies.set("refreshToken", refreshToken, refreshTokenOptions);
+    response.cookies.set("accessToken", accessToken, accessTokenOptions);
 
     return response;
   } catch (error) {
@@ -500,8 +500,10 @@ export const refreshAccessToken = async () => {
 
     const response = NextResponse.json(
       {
-        accessToken,
-        refreshToken,
+        data: {
+          accessToken,
+          refreshToken,
+        },
         message: "Access token refreshed",
       },
       { status: 201 }
