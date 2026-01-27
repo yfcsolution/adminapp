@@ -181,7 +181,21 @@ export default function SendTemplateModal({ isOpen, onClose, leadId, userId, pho
               </label>
               <select
                 value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  setSelectedTemplate(name);
+                  const tpl = templates.find(
+                    (t) => t.templateName === name
+                  );
+                  if (tpl) {
+                    if (tpl.exampleArr?.length) {
+                      setExampleArr(tpl.exampleArr);
+                    }
+                    if (tpl.mediaUri) {
+                      setMediaUri(tpl.mediaUri);
+                    }
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 required
               >
