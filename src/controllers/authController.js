@@ -29,7 +29,7 @@ const refreshTokenOptions = {
 };
 
 // genrate access and refresh tokens
-const genrateAccessAndRefreshTokens = async (userId) => {
+export const genrateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
     const accessToken = user.genrateAccessToken();
@@ -289,7 +289,8 @@ export const loginUser = async (req) => {
       expiresAt,
     });
 
-    // Send OTP email to the main admin email for verification
+    // Try to send OTP email to the main admin email for verification
+    let otpEmailSent = false;
     try {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -304,34 +305,68 @@ export const loginUser = async (req) => {
           <p>This code will expire in 10 minutes. If you did not initiate this login, please secure your account immediately.</p>
         `,
       });
+      otpEmailSent = true;
     } catch (mailError) {
-      console.error("Failed to send OTP email:", mailError);
+      console.error("Failed to send OTP email, falling back to direct login:", mailError);
+    }
+
+    if (otpEmailSent) {
+      // Log successful credential verification (but not full login yet)
+      await AdminLoginAttempt.create({
+        adminId: user._id,
+        email,
+        ipAddress,
+        userAgent,
+        status: "pending-otp",
+      });
+
       return NextResponse.json(
         {
           message:
-            "Unable to send verification code email. Please try again later.",
+            "Verification code sent to the main admin email. Please enter the code to complete login.",
+          otpRequired: true,
         },
-        { status: 500 }
+        { status: 200 }
       );
     }
 
-    // Log successful credential verification (but not full login yet)
+    // If OTP email could not be sent, fall back to direct login but still bind IP/browser + session
+    const sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    user.currentSessionId = sessionId;
+    user.lastIp = ipAddress;
+    user.lastUserAgent = userAgent;
+    user.lastLoginAt = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    const { accessToken, refreshToken } = await genrateAccessAndRefreshTokens(
+      user._id
+    );
+
     await AdminLoginAttempt.create({
       adminId: user._id,
       email,
       ipAddress,
       userAgent,
-      status: "pending-otp",
+      status: "success-no-otp-email",
     });
 
-    return NextResponse.json(
+    const loggedInUser = await User.findById(user._id);
+
+    const response = NextResponse.json(
       {
+        user: loggedInUser,
+        accessToken,
+        refreshToken,
         message:
-          "Verification code sent to the main admin email. Please enter the code to complete login.",
-        otpRequired: true,
+          "Logged in without OTP because verification email could not be sent. Please review email configuration.",
       },
       { status: 200 }
     );
+
+    response.cookies.set("refreshToken", refreshToken, refreshTokenOptions);
+    response.cookies.set("accessToken", accessToken, accessTokenOptions);
+
+    return response;
   } catch (error) {
     console.error("Login Error:", error);
     return NextResponse.json(

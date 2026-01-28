@@ -60,6 +60,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    currentSessionId: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -81,6 +85,7 @@ userSchema.methods.genrateAccessToken = function () {
       _id: this._id,
       email: this.email,
       name: this.name,
+      sessionId: this.currentSessionId || null,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {

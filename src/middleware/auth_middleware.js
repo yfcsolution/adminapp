@@ -30,6 +30,21 @@ export const verifyJWT = async (req) => {
       );
     }
 
+    // Enforce single active session (sessionId in token must match DB)
+    if (
+      decodedToken.sessionId &&
+      user.currentSessionId &&
+      decodedToken.sessionId !== user.currentSessionId
+    ) {
+      return NextResponse.json(
+        {
+          message:
+            "Your session has expired because you logged in from another device. Please login again.",
+        },
+        { status: 401 }
+      );
+    }
+
     // Enforce IP + User-Agent binding for the session
     const ipAddress =
       req.headers.get("x-forwarded-for") ||

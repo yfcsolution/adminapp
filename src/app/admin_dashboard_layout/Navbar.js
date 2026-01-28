@@ -12,13 +12,17 @@ export default function Navbar({ toggleSidebar }) {
   const router = useRouter();
   useEffect(() => {
     const getAdminData = async () => {
-      const response = await axios.get("/api/admin-info", {
-        withCredentials: true,
-      });
+      try {
+        const response = await axios.get("/api/admin-info", {
+          withCredentials: true,
+        });
 
-      if (response.status == 200) {
-        setAdminName(response.data.data.firstname);
-      } else {
+        if (response.status === 200) {
+          setAdminName(response.data.data.firstname);
+        } else {
+          router.push("/admin/login");
+        }
+      } catch (error) {
         router.push("/admin/login");
       }
     };

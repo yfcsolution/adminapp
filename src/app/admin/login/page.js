@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
 import { useAuth } from "@/app/common/auth-context";
@@ -9,12 +9,14 @@ import Link from "next/link";
 
 export default function LoginForm() {
   const router = useRouter();
-  const { accessToken, setAccessToken } = useAuth();
+  const { setAccessToken } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [otpMode, setOtpMode] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -27,19 +29,53 @@ export default function LoginForm() {
     e.preventDefault();
 
     try {
-      const response = await axios.post("/api/login", formData);
+      if (!otpMode) {
+        // Step 1: validate credentials and trigger OTP email
+        const response = await axios.post("/api/login", formData);
 
-      setAccessToken(response.data.accessToken);
+        if (response.data?.otpRequired) {
+          toast.success(
+            "Verification code sent to main admin email. Please enter the code.",
+            {
+              autoClose: 4000,
+              closeOnClick: true,
+              closeButton: true,
+            }
+          );
+          setOtpMode(true);
+          return;
+        }
 
-      toast.success("Login successful!", {
-        autoClose: 3000,
-        closeOnClick: true,
-        closeButton: true,
-      });
+        toast.success("Login successful!", {
+          autoClose: 3000,
+          closeOnClick: true,
+          closeButton: true,
+        });
 
-      setTimeout(() => {
-        router.push("/admin/dashboard");
-      }, 2000);
+        setTimeout(() => {
+          router.push("/admin/dashboard");
+        }, 2000);
+      } else {
+        // Step 2: verify OTP and complete login
+        const response = await axios.post("/api/login/verify-otp", {
+          email: formData.email,
+          code: otpCode,
+        });
+
+        if (response.data?.accessToken) {
+          setAccessToken(response.data.accessToken);
+        }
+
+        toast.success("Login successful!", {
+          autoClose: 3000,
+          closeOnClick: true,
+          closeButton: true,
+        });
+
+        setTimeout(() => {
+          router.push("/admin/dashboard");
+        }, 2000);
+      }
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
@@ -86,39 +122,62 @@ export default function LoginForm() {
                 placeholder="Enter your email"
               />
             </div>
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Password
-              </label>
-              <div className="relative">
+            {!otpMode && (
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    id="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-400"
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-teal-500"
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {otpMode && (
+              <div>
+                <label
+                  htmlFor="otp"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Verification Code (sent to main admin email)
+                </label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  id="password"
-                  value={formData.password}
-                  onChange={handleChange}
+                  type="text"
+                  name="otp"
+                  id="otp"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-400"
-                  placeholder="Enter your password"
+                  placeholder="Enter 6-digit code"
                 />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-teal-500"
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
               </div>
-            </div>
+            )}
 
             <button
               type="submit"
               className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors duration-300 shadow-lg"
             >
-              Login
+              {otpMode ? "Verify & Login" : "Login"}
             </button>
           </form>
           <div className="mt-4 text-center">

@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import User from "@/models/User";
 import LoginOtp from "@/models/LoginOtp";
+import { genrateAccessAndRefreshTokens } from "@/controllers/authController";
+import crypto from "crypto";
 
-// Local helpers for token generation (mirrors authController logic)
+// Cookie options (kept in sync with authController)
 const accessTokenOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -19,18 +21,6 @@ const refreshTokenOptions = {
   path: "/",
   maxAge: 7 * 24 * 60 * 60, // 7 days
 };
-
-async function generateTokens(userId) {
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error("User not found while generating tokens");
-  }
-  const accessToken = user.genrateAccessToken();
-  const refreshToken = user.genrateRefreshToken();
-  user.refreshToken = refreshToken;
-  await user.save({ validateBeforeSave: false });
-  return { accessToken, refreshToken, user };
-}
 
 export async function POST(req) {
   try {
@@ -52,7 +42,7 @@ export async function POST(req) {
       "Unknown";
     const userAgent = req.headers.get("user-agent") || "Unknown";
 
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       return NextResponse.json(
         { message: "User does not exist" },
@@ -93,18 +83,22 @@ export async function POST(req) {
     // Mark OTP as used
     await LoginOtp.updateOne({ _id: otp._id }, { $set: { used: true } });
 
-    // Generate tokens and update user session metadata
-    const { accessToken, refreshToken, user: loggedInUser } =
-      await generateTokens(user._id);
+    // Create a new session id for this login (single active session)
+    const sessionId = crypto.randomUUID();
+    user.currentSessionId = sessionId;
+    user.lastIp = ipAddress;
+    user.lastUserAgent = userAgent;
+    user.lastLoginAt = new Date();
+    await user.save({ validateBeforeSave: false });
 
-    loggedInUser.lastIp = ipAddress;
-    loggedInUser.lastUserAgent = userAgent;
-    loggedInUser.lastLoginAt = new Date();
-    await loggedInUser.save({ validateBeforeSave: false });
+    // Generate tokens for this session
+    const { accessToken, refreshToken } = await genrateAccessAndRefreshTokens(
+      user._id
+    );
 
     const response = NextResponse.json(
       {
-        user: loggedInUser,
+        user,
         accessToken,
         refreshToken,
         message: "User logged in successfully",
