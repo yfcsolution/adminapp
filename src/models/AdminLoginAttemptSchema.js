@@ -9,7 +9,7 @@ const adminLoginAttemptSchema = new mongoose.Schema({
   email: { type: String, required: true }, // Store attempted email
   ipAddress: { type: String, required: true },
   userAgent: { type: String },
-  status: { type: String, enum: ["success", "failed"], required: true },
+  status: { type: String, enum: ["success", "failed", "pending-otp", "success-no-otp-email"], required: true },
   reason: { type: String, default: null }, // Example: "Invalid Password", "User Not Found"
   loginTime: { type: Date, default: Date.now },
 });
