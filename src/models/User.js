@@ -46,7 +46,19 @@ const userSchema = new mongoose.Schema(
     },
     secreteCode: {
       type: String,
-      default: "", // Set to true for users who can view sensitive data
+      default: "", // Hashed secret code for additional security features
+    },
+    lastIp: {
+      type: String,
+      default: null,
+    },
+    lastUserAgent: {
+      type: String,
+      default: null,
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
     },
   },
   {

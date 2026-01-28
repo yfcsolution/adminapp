@@ -30,6 +30,28 @@ export const verifyJWT = async (req) => {
       );
     }
 
+    // Enforce IP + User-Agent binding for the session
+    const ipAddress =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      "Unknown";
+    const userAgent = req.headers.get("user-agent") || "Unknown";
+
+    if (
+      user.lastIp &&
+      user.lastUserAgent &&
+      (user.lastIp !== ipAddress || user.lastUserAgent !== userAgent)
+    ) {
+      return NextResponse.json(
+        {
+          message:
+            "Your session has expired due to a change in browser or IP. Please login again.",
+        },
+        { status: 401 }
+      );
+    }
+
     // Attach user info to the request object for further use in the handler
     req.user = user;
     return null; // If authenticated, return null to allow the request to proceed

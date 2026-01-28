@@ -7,6 +7,8 @@ import Student from "@/models/Student";
 import SecretCode from "@/models/secretCodeSchema";
 import RolesSchema from "@/models/RolesSchema";
 import AdminLoginAttempt from "@/models/AdminLoginAttemptSchema";
+import LoginOtp from "@/models/LoginOtp";
+import { transporter } from "@/config/nodemailer";
 
 // Cookie options for access and refresh tokens
 // Note: Next.js expects `maxAge` in seconds, not milliseconds.
@@ -219,6 +221,7 @@ export const deleteUser = async (req) => {
   }
 };
 
+// Step 1: Validate credentials and send OTP email
 export const loginUser = async (req) => {
   try {
     const { email, password } = await req.json();
@@ -234,6 +237,7 @@ export const loginUser = async (req) => {
     const ipAddress =
       req.headers.get("x-forwarded-for") ||
       req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
       "Unknown";
     const userAgent = req.headers.get("user-agent") || "Unknown";
 
@@ -273,38 +277,61 @@ export const loginUser = async (req) => {
       );
     }
 
-    // Generate tokens
-    const { accessToken, refreshToken } = await genrateAccessAndRefreshTokens(
-      user._id
-    );
+    // Generate a 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Log successful login
+    await LoginOtp.create({
+      userId: user._id,
+      code: otpCode,
+      ipAddress,
+      userAgent,
+      expiresAt,
+    });
+
+    // Send OTP email to the main admin email for verification
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: "dafiyahilmulquran@gmail.com",
+        subject: "Admin Login Verification Code",
+        html: `
+          <p>Assalam o Alaikum,</p>
+          <p>A login request was made for admin user: <strong>${email}</strong>.</p>
+          <p><strong>Verification Code:</strong> ${otpCode}</p>
+          <p><strong>IP Address:</strong> ${ipAddress}</p>
+          <p><strong>Browser:</strong> ${userAgent}</p>
+          <p>This code will expire in 10 minutes. If you did not initiate this login, please secure your account immediately.</p>
+        `,
+      });
+    } catch (mailError) {
+      console.error("Failed to send OTP email:", mailError);
+      return NextResponse.json(
+        {
+          message:
+            "Unable to send verification code email. Please try again later.",
+        },
+        { status: 500 }
+      );
+    }
+
+    // Log successful credential verification (but not full login yet)
     await AdminLoginAttempt.create({
       adminId: user._id,
       email,
       ipAddress,
       userAgent,
-      status: "success",
+      status: "pending-otp",
     });
 
-    const loggedInUser = await User.findById(user._id);
-
-    // Send response with tokens
-    const response = NextResponse.json(
+    return NextResponse.json(
       {
-        user: loggedInUser,
-        accessToken,
-        refreshToken,
-        message: "User logged in successfully",
+        message:
+          "Verification code sent to the main admin email. Please enter the code to complete login.",
+        otpRequired: true,
       },
       { status: 200 }
     );
-
-    // Set cookies in the response (httpOnly, secure in production, sameSite, path)
-    response.cookies.set("refreshToken", refreshToken, refreshTokenOptions);
-    response.cookies.set("accessToken", accessToken, accessTokenOptions);
-
-    return response;
   } catch (error) {
     console.error("Login Error:", error);
     return NextResponse.json(
