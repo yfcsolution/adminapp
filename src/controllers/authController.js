@@ -28,8 +28,8 @@ const refreshTokenOptions = {
   maxAge: 7 * 24 * 60 * 60, // 7 days
 };
 
-// genrate access and refresh tokens
-export const genrateAccessAndRefreshTokens = async (userId) => {
+// genrate access and refresh tokens (used mainly for refresh-token flow)
+const genrateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
     const accessToken = user.genrateAccessToken();
@@ -338,9 +338,11 @@ export const loginUser = async (req) => {
     user.lastLoginAt = new Date();
     await user.save({ validateBeforeSave: false });
 
-    const { accessToken, refreshToken } = await genrateAccessAndRefreshTokens(
-      user._id
-    );
+    // Inline token generation here to avoid any helper edge cases
+    const accessToken = user.genrateAccessToken();
+    const refreshToken = user.genrateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
     await AdminLoginAttempt.create({
       adminId: user._id,
@@ -370,7 +372,7 @@ export const loginUser = async (req) => {
   } catch (error) {
     console.error("Login Error:", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: error.message || "Internal server error" },
       { status: 500 }
     );
   }

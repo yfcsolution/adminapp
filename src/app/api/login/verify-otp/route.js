@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import User from "@/models/User";
 import LoginOtp from "@/models/LoginOtp";
-import { genrateAccessAndRefreshTokens } from "@/controllers/authController";
 import crypto from "crypto";
 
-// Cookie options (kept in sync with authController)
+// Cookie options (must match authController)
 const accessTokenOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -91,10 +90,11 @@ export async function POST(req) {
     user.lastLoginAt = new Date();
     await user.save({ validateBeforeSave: false });
 
-    // Generate tokens for this session
-    const { accessToken, refreshToken } = await genrateAccessAndRefreshTokens(
-      user._id
-    );
+    // Generate tokens for this session (inline to avoid helper side effects)
+    const accessToken = user.genrateAccessToken();
+    const refreshToken = user.genrateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
     const response = NextResponse.json(
       {
