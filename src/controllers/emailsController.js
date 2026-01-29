@@ -1,27 +1,43 @@
 import { NextResponse } from "next/server";
-import { transporters, emailConfigs } from "../config/email-config";
+import nodemailer from "nodemailer";
 import LeadsForm from "@/models/LeadsForm";
 import EmailTemplate from "@/models/EmailTemplate";
 import EmailLog from "@/models/EmailLog";
+import EmailConfig from "@/models/EmailConfig";
 import ERP_BASE_URL from "@/config/erpUrl";
 import axios from "axios";
 import connectDB from "@/config/db";
 
-// Get the appropriate transporter (default to 'ilm' for ilmulquran.com)
-const getTransporter = () => {
-  // Try to use the ilm transporter first (for ilmulquran.com)
-  if (transporters.ilm) {
-    return transporters.ilm;
+// Get email transporter from database config (same as custom email sending)
+async function getEmailTransporter() {
+  await connectDB();
+  const config = await EmailConfig.findOne({ isActive: true }).lean();
+
+  if (!config) {
+    throw new Error("No email configuration found. Please configure SMTP settings in Email Configuration page first.");
   }
-  // Fallback to any available transporter
-  return Object.values(transporters)[0];
-};
+
+  return nodemailer.createTransport({
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpSecure,
+    auth: {
+      user: config.smtpUser,
+      pass: config.smtpPassword,
+    },
+    tls: {
+      rejectUnauthorized: config.tlsRejectUnauthorized !== false,
+    },
+  });
+}
 
 // Mail options function with dynamic template data
-const MailOptions = (lead, template) => {
-  const config = emailConfigs.ilm || Object.values(emailConfigs)[0];
+const MailOptions = async (lead, template) => {
+  const emailConfig = await EmailConfig.findOne({ isActive: true }).lean();
+  const senderEmail = emailConfig?.smtpUser || "admin@ilmulquran.com";
+  
   return {
-    from: config?.from || process.env.EMAIL_USER || "admin@ilmulquran.com",
+    from: senderEmail,
     to: lead.EMAIL,
     subject: template.subject, // Set dynamic subject from template
     html: template.html, // Set dynamic HTML content from template
@@ -30,19 +46,7 @@ const MailOptions = (lead, template) => {
 
 const sendEmail = async (mailOptions) => {
   try {
-    const transporter = getTransporter();
-    
-    if (!transporter) {
-      throw new Error("No email transporter configured. Please check your SMTP environment variables (ILM_SMTP_USER, ILM_SMTP_PASS, etc.)");
-    }
-    
-    // Verify transporter before sending
-    try {
-      await transporter.verify();
-    } catch (verifyError) {
-      console.error("SMTP verification failed:", verifyError.message);
-      throw new Error(`SMTP authentication failed: ${verifyError.message}. Please check your email credentials in Vercel environment variables.`);
-    }
+    const transporter = await getEmailTransporter();
     
     const result = await transporter.sendMail(mailOptions); // Sends email
     console.log("Email sent successfully!", result.messageId);
@@ -51,8 +55,12 @@ const sendEmail = async (mailOptions) => {
     console.error("Failed to send email:", error);
     
     // Provide more helpful error messages
-    if (error.message.includes("Invalid login") || error.message.includes("535")) {
-      throw new Error("SMTP authentication failed. Please verify your email credentials (EMAIL_USER, EMAIL_PASSWORD or ILM_SMTP_USER, ILM_SMTP_PASS) are correct in Vercel environment variables.");
+    if (error.message.includes("Invalid login") || error.message.includes("535") || error.message.includes("authentication")) {
+      throw new Error("SMTP authentication failed. Please check your email configuration in the Email Configuration page (/admin/email/config) and ensure credentials are correct.");
+    }
+    
+    if (error.message.includes("No email configuration")) {
+      throw new Error("No email configuration found. Please configure SMTP settings in Email Configuration page (/admin/email/config) first.");
     }
     
     throw new Error("Failed to send email: " + error.message);
@@ -124,7 +132,7 @@ export const handleLeadEmails = async (req) => {
     }
 
     // Prepare the mail options using the lead and template data
-    const mailOptions = MailOptions(lead, template);
+    const mailOptions = await MailOptions(lead, template);
 
     // Send the email with the constructed mail options
     let mailResult;
