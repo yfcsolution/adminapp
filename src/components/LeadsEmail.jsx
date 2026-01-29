@@ -313,80 +313,82 @@ const LeadsEmail = ({ leadId }) => {
           )}
 
           {!loading && filteredEmails.length > 0 ? (
-            <div className="divide-y divide-gray-100">
-              {filteredEmails.map((email) => (
-                <div
-                  key={email.messageId || email.id || Math.random()}
-                  className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                    selectedEmail?.messageId === email.messageId
-                      ? "bg-teal-50 border-l-4 border-teal-500"
-                      : ""
-                  }`}
-                  onClick={() => setSelectedEmail(email)}
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="flex items-center">
-                      <div className="flex items-center mr-2">
-                        {getEmailStatusIcon(email)}
+            <>
+              <div className="divide-y divide-gray-100">
+                {filteredEmails.map((email) => (
+                  <div
+                    key={email.messageId || email.id || Math.random()}
+                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                      selectedEmail?.messageId === email.messageId
+                        ? "bg-teal-50 border-l-4 border-teal-500"
+                        : ""
+                    }`}
+                    onClick={() => setSelectedEmail(email)}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="flex items-center">
+                        <div className="flex items-center mr-2">
+                          {getEmailStatusIcon(email)}
+                        </div>
+                        <h3 className="font-medium truncate flex items-center">
+                          {email.subject || "No Subject"}
+                          {getReadStatusIcon(email)}
+                        </h3>
                       </div>
-                      <h3 className="font-medium truncate flex items-center">
-                        {email.subject || "No Subject"}
-                        {getReadStatusIcon(email)}
-                      </h3>
+                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2 flex items-center">
+                        <FiCalendar className="mr-1" />
+                        {formatDate(email.sentAt || email.createdAt)}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500 whitespace-nowrap ml-2 flex items-center">
-                      <FiCalendar className="mr-1" />
-                      {formatDate(email.sentAt || email.createdAt)}
-                    </span>
+                    <div className="flex items-center text-sm text-gray-600 truncate">
+                      <FiUser className="mr-1 text-gray-400" />
+                      <span>To: {email.receiver || "Unknown recipient"}</span>
+                    </div>
+                    <div className="flex items-center mt-1">
+                      <p className="text-sm text-gray-500 truncate flex-1">
+                        {email.body
+                          ?.replace(/<[^>]*>?/gm, "")
+                          .substring(0, 100) || "No content"}
+                        ...
+                      </p>
+                      {hasAttachments(email) && (
+                        <FiPaperclip className="ml-2 text-gray-400" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center text-sm text-gray-600 truncate">
-                    <FiUser className="mr-1 text-gray-400" />
-                    <span>To: {email.receiver || "Unknown recipient"}</span>
-                  </div>
-                  <div className="flex items-center mt-1">
-                    <p className="text-sm text-gray-500 truncate flex-1">
-                      {email.body
-                        ?.replace(/<[^>]*>?/gm, "")
-                        .substring(0, 100) || "No content"}
-                      ...
-                    </p>
-                    {hasAttachments(email) && (
-                      <FiPaperclip className="ml-2 text-gray-400" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Pagination Controls */}
-            {pagination.pages > 1 && (
-              <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
-                <div className="text-sm text-gray-700">
-                  Showing {((pagination.page - 1) * pagination.limit) + 1} to{" "}
-                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
-                  {pagination.total} emails
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-                    disabled={pagination.page === 1 || loading}
-                    className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 flex items-center gap-1"
-                  >
-                    <FiChevronLeft /> Previous
-                  </button>
-                  <span className="px-4 py-2 text-sm text-gray-700">
-                    Page {pagination.page} of {pagination.pages}
-                  </span>
-                  <button
-                    onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                    disabled={pagination.page >= pagination.pages || loading}
-                    className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 flex items-center gap-1"
-                  >
-                    Next <FiChevronRight />
-                  </button>
-                </div>
+                ))}
               </div>
-            )}
+              
+              {/* Pagination Controls */}
+              {pagination.pages > 1 && (
+                <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
+                  <div className="text-sm text-gray-700">
+                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{" "}
+                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
+                    {pagination.total} emails
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                      disabled={pagination.page === 1 || loading}
+                      className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      <FiChevronLeft /> Previous
+                    </button>
+                    <span className="px-4 py-2 text-sm text-gray-700">
+                      Page {pagination.page} of {pagination.pages}
+                    </span>
+                    <button
+                      onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                      disabled={pagination.page >= pagination.pages || loading}
+                      className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      Next <FiChevronRight />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : !loading && emails.length === 0 ? (
             <div className="p-8 text-center text-gray-500 flex flex-col items-center">
               <FiMail className="text-4xl mb-3 text-gray-300" />
