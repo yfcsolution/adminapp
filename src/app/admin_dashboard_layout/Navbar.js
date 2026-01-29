@@ -11,23 +11,36 @@ export default function Navbar({ toggleSidebar }) {
   const [adminName, setAdminName] = useState("");
   const router = useRouter();
   useEffect(() => {
+    let isMounted = true;
+    
     const getAdminData = async () => {
       try {
         const response = await axios.get("/api/admin-info", {
           withCredentials: true,
+          timeout: 5000, // 5 second timeout for faster failure
         });
 
-        if (response.status === 200) {
-          setAdminName(response.data.data.firstname);
-        } else {
+        if (isMounted && response.status === 200) {
+          setAdminName(response.data.data?.firstname || "Admin");
+        } else if (isMounted) {
           router.push("/admin/login");
         }
       } catch (error) {
-        router.push("/admin/login");
+        if (isMounted) {
+          console.error("Failed to fetch admin data:", error);
+          if (error.response?.status === 401 || error.code === "ECONNABORTED") {
+            router.push("/admin/login");
+          }
+        }
       }
     };
+    
     getAdminData();
-  }, []);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   return (
     <header className="bg-white p-4 flex items-center justify-between md:justify-start relative">

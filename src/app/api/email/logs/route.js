@@ -1,4 +1,3 @@
-// API Route for Email Logs
 import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import EmailLog from "@/models/EmailLog";
@@ -8,29 +7,23 @@ export async function GET(req) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page")) || 1;
+    const limit = parseInt(searchParams.get("limit")) || 50;
+    const type = searchParams.get("type");
+    const status = searchParams.get("status");
     const leadId = searchParams.get("leadId");
     const userId = searchParams.get("userId");
-    const type = searchParams.get("type"); // auto or manual
-    const status = searchParams.get("status"); // success or failed
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
+
     const skip = (page - 1) * limit;
 
-    let query = {};
+    // Build query
+    const query = {};
+    if (type) query.type = type;
+    if (status) query.status = status;
+    if (leadId) query.leadId = parseInt(leadId);
+    if (userId) query.userId = parseInt(userId);
 
-    if (leadId) {
-      query.leadId = parseInt(leadId);
-    }
-    if (userId) {
-      query.userId = parseInt(userId);
-    }
-    if (type) {
-      query.type = type;
-    }
-    if (status) {
-      query.status = status;
-    }
-
+    // Fetch logs with pagination
     const [logs, total] = await Promise.all([
       EmailLog.find(query)
         .sort({ sentAt: -1 })
@@ -40,6 +33,8 @@ export async function GET(req) {
       EmailLog.countDocuments(query),
     ]);
 
+    const pages = Math.ceil(total / limit);
+
     return NextResponse.json({
       success: true,
       data: logs,
@@ -47,7 +42,7 @@ export async function GET(req) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit),
+        pages,
       },
     });
   } catch (error) {
