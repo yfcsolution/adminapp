@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { transporter } from "../config/nodemailer";
+import { transporters, emailConfigs } from "../config/email-config";
 import LeadsForm from "@/models/LeadsForm";
 import EmailTemplate from "@/models/EmailTemplate";
 import EmailLog from "@/models/EmailLog";
@@ -7,21 +7,54 @@ import ERP_BASE_URL from "@/config/erpUrl";
 import axios from "axios";
 import connectDB from "@/config/db";
 
+// Get the appropriate transporter (default to 'ilm' for ilmulquran.com)
+const getTransporter = () => {
+  // Try to use the ilm transporter first (for ilmulquran.com)
+  if (transporters.ilm) {
+    return transporters.ilm;
+  }
+  // Fallback to any available transporter
+  return Object.values(transporters)[0];
+};
+
 // Mail options function with dynamic template data
-const MailOptions = (lead, template) => ({
-  from: process.env.EMAIL_USER || "admin@ilmulquran.com",
-  to: lead.EMAIL,
-  subject: template.subject, // Set dynamic subject from template
-  html: template.html, // Set dynamic HTML content from template
-});
+const MailOptions = (lead, template) => {
+  const config = emailConfigs.ilm || Object.values(emailConfigs)[0];
+  return {
+    from: config?.from || process.env.EMAIL_USER || "admin@ilmulquran.com",
+    to: lead.EMAIL,
+    subject: template.subject, // Set dynamic subject from template
+    html: template.html, // Set dynamic HTML content from template
+  };
+};
 
 const sendEmail = async (mailOptions) => {
   try {
+    const transporter = getTransporter();
+    
+    if (!transporter) {
+      throw new Error("No email transporter configured. Please check your SMTP environment variables (ILM_SMTP_USER, ILM_SMTP_PASS, etc.)");
+    }
+    
+    // Verify transporter before sending
+    try {
+      await transporter.verify();
+    } catch (verifyError) {
+      console.error("SMTP verification failed:", verifyError.message);
+      throw new Error(`SMTP authentication failed: ${verifyError.message}. Please check your email credentials in Vercel environment variables.`);
+    }
+    
     const result = await transporter.sendMail(mailOptions); // Sends email
     console.log("Email sent successfully!", result.messageId);
     return result;
   } catch (error) {
     console.error("Failed to send email:", error);
+    
+    // Provide more helpful error messages
+    if (error.message.includes("Invalid login") || error.message.includes("535")) {
+      throw new Error("SMTP authentication failed. Please verify your email credentials (EMAIL_USER, EMAIL_PASSWORD or ILM_SMTP_USER, ILM_SMTP_PASS) are correct in Vercel environment variables.");
+    }
+    
     throw new Error("Failed to send email: " + error.message);
   }
 };
