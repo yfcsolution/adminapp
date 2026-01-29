@@ -31,6 +31,12 @@ const LeadsEmail = ({ leadId }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showComposeEmail, setShowComposeEmail] = useState(false);
   const [activeTab, setActiveTab] = useState("inbox");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -39,13 +45,14 @@ const LeadsEmail = ({ leadId }) => {
     } else {
       fetchEmails();
     }
-  }, [leadId, activeTab]);
+  }, [leadId, activeTab, pagination.page]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setEmails([]);
     setSelectedEmail(null);
     setError(null);
+    setPagination({ ...pagination, page: 1 }); // Reset to first page
   };
 
   const fetchEmails = async () => {
@@ -53,7 +60,11 @@ const LeadsEmail = ({ leadId }) => {
       setLoading(true);
       setError(null);
 
-      const body = { leadId };
+      const body = { 
+        leadId,
+        page: pagination.page,
+        limit: pagination.limit,
+      };
       if (activeTab === "sent") {
         body.sent = true;
       } else {
@@ -88,7 +99,13 @@ const LeadsEmail = ({ leadId }) => {
         (a, b) =>
           new Date(b.sentAt || b.createdAt) - new Date(a.sentAt || a.createdAt)
       );
+      
       setEmails(allEmails);
+      
+      // Update pagination from response
+      if (response.data?.pagination) {
+        setPagination(response.data.pagination);
+      }
     } catch (error) {
       console.error("Error fetching emails:", error);
       setError(
@@ -340,6 +357,36 @@ const LeadsEmail = ({ leadId }) => {
                 </div>
               ))}
             </div>
+            
+            {/* Pagination Controls */}
+            {pagination.pages > 1 && (
+              <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
+                <div className="text-sm text-gray-700">
+                  Showing {((pagination.page - 1) * pagination.limit) + 1} to{" "}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
+                  {pagination.total} emails
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                    disabled={pagination.page === 1 || loading}
+                    className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 flex items-center gap-1"
+                  >
+                    <FiChevronLeft /> Previous
+                  </button>
+                  <span className="px-4 py-2 text-sm text-gray-700">
+                    Page {pagination.page} of {pagination.pages}
+                  </span>
+                  <button
+                    onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                    disabled={pagination.page >= pagination.pages || loading}
+                    className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 flex items-center gap-1"
+                  >
+                    Next <FiChevronRight />
+                  </button>
+                </div>
+              </div>
+            )}
           ) : !loading && emails.length === 0 ? (
             <div className="p-8 text-center text-gray-500 flex flex-col items-center">
               <FiMail className="text-4xl mb-3 text-gray-300" />
