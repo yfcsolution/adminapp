@@ -1,44 +1,53 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-const DuplicateLeads = ({ leadId }) => {
+const DuplicateLeads = ({ leadId, email, phone }) => {
+  const router = useRouter();
   const [leadsData, setLeadsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!leadId) {
-      router.push(`/admin/leads1/leads-data/profile/${leadId}`);
-    } else {
-      (async () => {
-        try {
-          setLoading(true);
-          const response = await fetch("/api/leads/duplicate", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ Lead_Id: leadId }),
-          });
-
-          const data = await response.json();
-          console.log("data im getting is", data);
-
-          if (response.ok) {
-            setLeadsData(data.data || []);
-          } else {
-            console.error("Error fetching leads:", data.error);
-            setLeadsData([]);
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          setLeadsData([]);
-        } finally {
-          setLoading(false);
-        }
-      })();
+    if (!leadId && !email && !phone) {
+      setError("No search parameters provided");
+      setLoading(false);
+      return;
     }
-  }, [leadId]);
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch("/api/leads/duplicate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            Lead_Id: leadId || null,
+            Email: email || null,
+            Phone: phone || null,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success !== false) {
+          setLeadsData(data.data || []);
+        } else {
+          setError(data.error || data.message || "Failed to fetch duplicate leads");
+          setLeadsData([]);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        setError("An error occurred while fetching duplicate leads");
+        setLeadsData([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [leadId, email, phone]);
 
   if (loading) {
     return (

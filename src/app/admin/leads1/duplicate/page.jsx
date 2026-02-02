@@ -27,10 +27,10 @@ const DuplicateLeads = () => {
           });
 
           const data = await response.json();
-          if (response.ok) {
+          if (response.ok && data.success !== false) {
             setLeadsData(data.data || []);
           } else {
-            console.error("Error fetching leads:", data.error);
+            console.error("Error fetching leads:", data.error || data.message || "Unknown error");
             setLeadsData([]);
           }
         } catch (error) {
@@ -47,18 +47,44 @@ const DuplicateLeads = () => {
     <DashboardLayout>
       <div className="flex flex-col items-center min-h-screen p-6">
         {loading ? (
-          <span className="text-teal-600 text-lg font-semibold">
-            Loading...
-          </span>
+          <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
+            <span className="text-teal-600 text-lg font-semibold">
+              Loading duplicate leads...
+            </span>
+          </div>
+        ) : error ? (
+          <div className="w-full max-w-5xl">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-red-600 mb-2">Error</h2>
+              <p className="text-red-700">{error}</p>
+              <button
+                onClick={() => router.push("/admin/leads1/leads-data")}
+                className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700"
+              >
+                Back to Leads
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="w-full max-w-5xl space-y-6">
             {/* Summary Section */}
             <div className="bg-white shadow-md rounded-lg p-6 border border-gray-300">
-              <h2 className="text-xl font-bold text-teal-600">Summary</h2>
-              <p className="text-gray-700 mt-2">
-                <span className="font-semibold">Total Forms Submitted:</span>{" "}
-                {leadsData.length}
-              </p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-teal-600">Duplicate Leads Summary</h2>
+                  <p className="text-gray-700 mt-2">
+                    <span className="font-semibold">Total Forms Submitted:</span>{" "}
+                    {leadsData.length}
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push("/admin/leads1/leads-data")}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                >
+                  Back to Leads
+                </button>
+              </div>
             </div>
 
             {/* Leads List */}

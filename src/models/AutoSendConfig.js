@@ -37,6 +37,10 @@ const autoSendConfigSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    template_id: {
+      type: Number,
+      default: null, // Email template ID (from EmailTemplate model)
+    },
     token: {
       type: String,
       default: null, // For WhatsApp API token

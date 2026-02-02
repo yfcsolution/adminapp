@@ -205,54 +205,101 @@ export const handleLeadsSubmit = async (req) => {
       try {
         const AutoSendConfig = (await import("@/models/AutoSendConfig")).default;
         const EmailLog = (await import("@/models/EmailLog")).default;
-        const { transporter } = await import("@/config/nodemailer");
+        const EmailTemplate = (await import("@/models/EmailTemplate")).default;
+        const EmailConfig = (await import("@/models/EmailConfig")).default;
+        const nodemailer = (await import("nodemailer")).default;
         await connectDB();
         
-        const emailConfig = await AutoSendConfig.findOne({
+        const autoEmailConfig = await AutoSendConfig.findOne({
           type: "email",
           enabled: true,
         }).lean();
 
-        if (emailConfig && emailConfig.subject && emailConfig.body && EMAIL) {
-          try {
-            const mailResponse = await transporter.sendMail({
-              from: process.env.EMAIL_USER,
-              to: EMAIL,
-              subject: emailConfig.subject,
-              html: emailConfig.body,
-              text: emailConfig.body.replace(/<[^>]*>?/gm, ""),
-            });
+        if (!autoEmailConfig || !EMAIL) {
+          return; // No auto-send config or no email address
+        }
 
-            // Log success
-            await EmailLog.create({
-              leadId: newFormData.LEAD_ID,
-              email: EMAIL,
-              subject: emailConfig.subject,
-              body: emailConfig.body,
-              type: "auto",
-              status: "success",
-              messageId: mailResponse.messageId,
-              response: {
-                accepted: mailResponse.accepted,
-                rejected: mailResponse.rejected,
-              },
-              sentAt: new Date(),
-            });
-            console.log(`Auto email sent to lead ${newFormData.LEAD_ID}`);
-          } catch (emailError) {
-            // Log failure
-            await EmailLog.create({
-              leadId: newFormData.LEAD_ID,
-              email: EMAIL,
-              subject: emailConfig.subject,
-              body: emailConfig.body,
-              type: "auto",
-              status: "failed",
-              error: emailError.message,
-              sentAt: new Date(),
-            });
-            console.error("Auto-send email failed:", emailError.message);
+        // Get SMTP transporter from database EmailConfig
+        const smtpConfig = await EmailConfig.findOne({ isActive: true }).lean();
+        if (!smtpConfig) {
+          console.error("Auto-send email failed: No SMTP configuration found. Please configure in Email Configuration page.");
+          return;
+        }
+
+        const transporter = nodemailer.createTransport({
+          host: smtpConfig.smtpHost,
+          port: smtpConfig.smtpPort,
+          secure: smtpConfig.smtpSecure,
+          auth: {
+            user: smtpConfig.smtpUser,
+            pass: smtpConfig.smtpPassword,
+          },
+          tls: {
+            rejectUnauthorized: smtpConfig.tlsRejectUnauthorized !== false,
+          },
+        });
+
+        let emailSubject = autoEmailConfig.subject;
+        let emailBody = autoEmailConfig.body;
+
+        // If template_id is provided, use email template instead
+        if (autoEmailConfig.template_id) {
+          const emailTemplate = await EmailTemplate.findOne({ 
+            template_id: autoEmailConfig.template_id 
+          }).lean();
+          
+          if (emailTemplate) {
+            emailSubject = emailTemplate.subject;
+            emailBody = emailTemplate.html;
+          } else {
+            console.error(`Auto-send email failed: Email template with ID ${autoEmailConfig.template_id} not found`);
+            return;
           }
+        }
+
+        if (!emailSubject || !emailBody) {
+          console.error("Auto-send email failed: No subject or body configured");
+          return;
+        }
+
+        try {
+          const mailResponse = await transporter.sendMail({
+            from: smtpConfig.smtpUser,
+            to: EMAIL,
+            subject: emailSubject,
+            html: emailBody,
+            text: emailBody.replace(/<[^>]*>?/gm, ""),
+          });
+
+          // Log success
+          await EmailLog.create({
+            leadId: newFormData.LEAD_ID,
+            email: EMAIL,
+            subject: emailSubject,
+            body: emailBody,
+            type: "auto",
+            status: "success",
+            messageId: mailResponse.messageId,
+            response: {
+              accepted: mailResponse.accepted,
+              rejected: mailResponse.rejected,
+            },
+            sentAt: new Date(),
+          });
+          console.log(`Auto email sent to lead ${newFormData.LEAD_ID}`);
+        } catch (emailError) {
+          // Log failure
+          await EmailLog.create({
+            leadId: newFormData.LEAD_ID,
+            email: EMAIL,
+            subject: emailSubject,
+            body: emailBody,
+            type: "auto",
+            status: "failed",
+            error: emailError.message,
+            sentAt: new Date(),
+          });
+          console.error("Auto-send email failed:", emailError.message);
         }
       } catch (error) {
         console.error("Auto-send email setup failed:", error.message);
