@@ -21,5 +21,11 @@
       "source": "/api/whatsapp/events",
       "destination": "http://45.76.132.90:3001/events"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/backup-database",
+      "schedule": "0 * * * *"
+    }
   ]
 }

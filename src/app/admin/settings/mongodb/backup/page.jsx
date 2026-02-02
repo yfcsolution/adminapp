@@ -6,6 +6,7 @@ import DashboardLayout from "./../../../../admin_dashboard_layout/layout";
 export default function BackupManager() {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -13,10 +14,9 @@ export default function BackupManager() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/backups/list", {
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_BACKUP_SECRET}`,
-        },
+      const res = await fetch("/api/backups/list-auth", {
+        method: "GET",
+        credentials: "include", // Include cookies for auth
       });
 
       if (!res.ok) {
@@ -36,6 +36,40 @@ export default function BackupManager() {
     }
   };
 
+  const createBackup = async () => {
+    setBackingUp(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/backups/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for auth
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSuccess(
+          `${data.message || "Backup completed successfully"} - ${data.collections.length} collections backed up`
+        );
+        // Refresh the list to show updated file
+        await fetchBackups();
+      } else {
+        setError(data.error || "Backup failed");
+      }
+    } catch (err) {
+      setError(err.message || "Failed to create backup");
+    } finally {
+      setBackingUp(false);
+      setTimeout(() => {
+        setSuccess("");
+        setError("");
+      }, 10000);
+    }
+  };
+
   const restoreBackup = async (fileId, fileName) => {
     if (
       !confirm(
@@ -48,12 +82,12 @@ export default function BackupManager() {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/backups/restore", {
+      const res = await fetch("/api/backups/restore-auth", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_BACKUP_SECRET}`,
         },
+        credentials: "include", // Include cookies for auth
         body: JSON.stringify({ fileId }),
       });
 
@@ -88,8 +122,16 @@ export default function BackupManager() {
           <h2 className="text-xl font-bold">Database Backups</h2>
           <div className="flex gap-2">
             <button
+              onClick={createBackup}
+              disabled={backingUp || loading}
+              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              <FiRefreshCw className={backingUp ? "animate-spin" : ""} />
+              {backingUp ? "Backing Up..." : "Create Backup"}
+            </button>
+            <button
               onClick={fetchBackups}
-              disabled={loading}
+              disabled={loading || backingUp}
               className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
             >
               <FiRefreshCw className={loading ? "animate-spin" : ""} />

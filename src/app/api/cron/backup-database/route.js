@@ -1,16 +1,10 @@
+// Cron job endpoint for hourly MongoDB backup to Google Drive
+// This should be called every hour by Vercel Cron or external cron service
+import { NextResponse } from "next/server";
 import { MongoClient } from "mongodb";
 import { google } from "googleapis";
-import { NextResponse } from "next/server";
 
-export async function POST(request) {
-  // Authorization check
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${process.env.BACKUP_SECRET}`) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized: Invalid or missing token" },
-      { status: 401 }
-    );
-  }
+async function performBackup() {
   // Verify environment variables
   const requiredEnvVars = [
     "MONGO_URI",
@@ -27,19 +21,13 @@ export async function POST(request) {
     (varName) => !process.env[varName]
   );
   if (missingVars.length > 0) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Missing environment variables: ${missingVars.join(", ")}`,
-      },
-      { status: 500 }
-    );
+    throw new Error(`Missing environment variables: ${missingVars.join(", ")}`);
   }
 
   let client;
   try {
     // MongoDB connection
-    console.log("Connecting to MongoDB...");
+    console.log("[Cron Backup] Connecting to MongoDB...");
     client = new MongoClient(process.env.MONGO_URI, {
       connectTimeoutMS: 10000,
       socketTimeoutMS: 30000,
@@ -47,13 +35,13 @@ export async function POST(request) {
     await client.connect();
 
     // Export data
-    console.log("Exporting collections...");
+    console.log("[Cron Backup] Exporting collections...");
     const db = client.db();
     const collections = await db.listCollections().toArray();
     const backupData = {};
 
     for (const collection of collections) {
-      console.log(`Exporting ${collection.name}...`);
+      console.log(`[Cron Backup] Exporting ${collection.name}...`);
       backupData[collection.name] = await db
         .collection(collection.name)
         .find()
@@ -61,7 +49,7 @@ export async function POST(request) {
     }
 
     // Google Drive authentication
-    console.log("Authenticating with Google Drive...");
+    console.log("[Cron Backup] Authenticating with Google Drive...");
     const auth = new google.auth.GoogleAuth({
       credentials: {
         type: "service_account",
@@ -80,11 +68,11 @@ export async function POST(request) {
     });
 
     const drive = google.drive({ version: "v3", auth });
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID.split("?")[0]; // Remove query parameters
-    const fileName = "mongodb-backup.json"; // Fixed filename for updating same file
-    
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID.split("?")[0];
+    const fileName = "mongodb-backup.json";
+
     // Check if file already exists
-    console.log(`Checking for existing backup file: ${fileName}...`);
+    console.log(`[Cron Backup] Checking for existing backup file: ${fileName}...`);
     const existingFiles = await drive.files.list({
       q: `name='${fileName}' and '${folderId}' in parents and trashed=false`,
       fields: "files(id, name)",
@@ -96,13 +84,12 @@ export async function POST(request) {
     if (existingFiles.data.files && existingFiles.data.files.length > 0) {
       // File exists, update it
       fileId = existingFiles.data.files[0].id;
-      console.log(`Updating existing file ${fileName} (ID: ${fileId})...`);
+      console.log(`[Cron Backup] Updating existing file ${fileName} (ID: ${fileId})...`);
       
-      // Update the file
       response = await drive.files.update({
         fileId: fileId,
         requestBody: {
-          description: `MongoDB backup updated on ${new Date().toISOString()}`,
+          description: `MongoDB backup updated on ${new Date().toISOString()} (Hourly Auto-Backup)`,
         },
         media: {
           mimeType: "application/json",
@@ -112,12 +99,12 @@ export async function POST(request) {
       });
     } else {
       // File doesn't exist, create it
-      console.log(`Creating new backup file: ${fileName}...`);
+      console.log(`[Cron Backup] Creating new backup file: ${fileName}...`);
       response = await drive.files.create({
         requestBody: {
           name: fileName,
           parents: [folderId],
-          description: `MongoDB backup created on ${new Date().toISOString()}`,
+          description: `MongoDB backup created on ${new Date().toISOString()} (Hourly Auto-Backup)`,
         },
         media: {
           mimeType: "application/json",
@@ -128,8 +115,8 @@ export async function POST(request) {
       fileId = response.data.id;
     }
 
-    console.log("Backup completed successfully");
-    return NextResponse.json({
+    console.log("[Cron Backup] Backup completed successfully");
+    return {
       success: true,
       fileId: response.data.id,
       fileName: response.data.name,
@@ -140,58 +127,53 @@ export async function POST(request) {
       message: existingFiles.data.files && existingFiles.data.files.length > 0 
         ? "Backup file updated successfully" 
         : "Backup file created successfully",
-    });
+    };
   } catch (error) {
-    console.error("Backup failed:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message,
-        details:
-          process.env.NODE_ENV === "development"
-            ? {
-                stack: error.stack,
-                env: {
-                  MONGO_URI: !!process.env.MONGO_URI,
-                  GOOGLE_DRIVE_FOLDER_ID: !!process.env.GOOGLE_DRIVE_FOLDER_ID,
-                  GOOGLE_PRIVATE_KEY: !!process.env.GOOGLE_PRIVATE_KEY,
-                  GOOGLE_CLIENT_EMAIL: !!process.env.GOOGLE_CLIENT_EMAIL,
-                },
-              }
-            : undefined,
-      },
-      { status: 500 }
-    );
+    console.error("[Cron Backup] Backup failed:", error);
+    throw error;
   } finally {
     if (client) {
       try {
         await client.close();
-        console.log("MongoDB connection closed");
+        console.log("[Cron Backup] MongoDB connection closed");
       } catch (closeError) {
-        console.error("Error closing MongoDB connection:", closeError);
+        console.error("[Cron Backup] Error closing MongoDB connection:", closeError);
       }
     }
   }
 }
 
-// Other HTTP methods
-export async function GET() {
-  return NextResponse.json(
-    { success: false, error: "Method not allowed" },
-    { status: 405 }
-  );
-}
+export async function GET(req) {
+  try {
+    // Verify cron secret if needed
+    const authHeader = req.headers.get("authorization");
+    const cronSecret = req.headers.get("x-cron-secret") || req.headers.get("x-vercel-cron");
+    
+    // Allow Vercel Cron or CRON_SECRET
+    if (process.env.CRON_SECRET && !cronSecret) {
+      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 }
+        );
+      }
+    }
 
-export async function PUT() {
-  return NextResponse.json(
-    { success: false, error: "Method not allowed" },
-    { status: 405 }
-  );
-}
+    const result = await performBackup();
 
-export async function DELETE() {
-  return NextResponse.json(
-    { success: false, error: "Method not allowed" },
-    { status: 405 }
-  );
+    return NextResponse.json({
+      success: true,
+      message: "Hourly backup completed successfully",
+      ...result,
+    });
+  } catch (error) {
+    console.error("[Cron Backup] Error in hourly backup cron job:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
 }

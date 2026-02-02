@@ -32,14 +32,13 @@ export async function GET(request) {
 
     const drive = google.drive({ version: "v3", auth });
 
-    // 2. List all backup files in the specified folder
+    // 2. List all backup files in the specified folder (including the main backup file)
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID.split("?")[0];
     const response = await drive.files.list({
-      q: `'${
-        process.env.GOOGLE_DRIVE_FOLDER_ID.split("?")[0]
-      }' in parents and mimeType='application/json'`,
+      q: `'${folderId}' in parents and (mimeType='application/json' or name='mongodb-backup.json') and trashed=false`,
       fields:
         "files(id, name, createdTime, modifiedTime, size, description, webViewLink)",
-      orderBy: "createdTime desc",
+      orderBy: "modifiedTime desc",
     });
 
     // 3. Format the response
