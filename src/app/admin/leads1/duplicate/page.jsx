@@ -9,39 +9,52 @@ const DuplicateLeads = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [leadsData, setLeadsData] = useState([]);
+  const [error, setError] = useState(null);
   const leadId = searchParams.get("id");
+  const email = searchParams.get("email");
+  const phone = searchParams.get("phone");
 
   useEffect(() => {
-    if (!leadId) {
-      router.push("/admin/leads1/leads-data");
-    } else {
-      (async () => {
-        try {
-          setLoading(true);
-          const response = await fetch("/api/leads/duplicate", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ Lead_Id: leadId }),
-          });
-
-          const data = await response.json();
-          if (response.ok && data.success !== false) {
-            setLeadsData(data.data || []);
-          } else {
-            console.error("Error fetching leads:", data.error || data.message || "Unknown error");
-            setLeadsData([]);
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          setLeadsData([]);
-        } finally {
-          setLoading(false);
-        }
-      })();
+    if (!leadId && !email && !phone) {
+      setError("No search parameters provided. Please provide Lead ID, Email, or Phone.");
+      setLoading(false);
+      return;
     }
-  }, [leadId, router]);
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch("/api/leads/duplicate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            Lead_Id: leadId || null,
+            Email: email || null,
+            Phone: phone || null,
+          }),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success !== false) {
+          setLeadsData(data.data || []);
+        } else {
+          const errorMsg = data.error || data.message || "Failed to fetch duplicate leads";
+          setError(errorMsg);
+          console.error("Error fetching leads:", errorMsg);
+          setLeadsData([]);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        setError("An error occurred while fetching duplicate leads");
+        setLeadsData([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [leadId, email, phone, router]);
 
   return (
     <DashboardLayout>
