@@ -149,7 +149,11 @@ const Page = () => {
           {activeSection === "Classes" && <LeadsStudents leadId={lead_id} />}
           {activeSection === "Activity Log" && <p>Activity Log will be here</p>}
           {activeSection === "Duplicate Leads" && (
-            <DuplicateLeads leadId={lead_id} />
+            <DuplicateLeads 
+              leadId={lead_id} 
+              email={leadData?.EMAIL}
+              phone={leadData?.PHONE_NO}
+            />
           )}
           {activeSection === "Chat" && <LeadChat leadId={lead_id} />}
         </div>

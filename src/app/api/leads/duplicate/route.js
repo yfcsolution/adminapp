@@ -17,16 +17,23 @@ export async function POST(request) {
       );
     }
 
-    // Build query based on available parameters
+    // Build query - if Lead_Id is provided, use it; otherwise use Email or Phone
     const query = {};
     if (Lead_Id) {
+      // If Lead_Id is provided, fetch duplicates for that specific lead ID
       query.LEAD_ID = Lead_Id;
-    }
-    if (Email) {
-      query.EMAIL = Email;
-    }
-    if (Phone) {
-      query.PHONE_NO = Phone;
+    } else {
+      // If Email or Phone is provided (from main lead), find duplicates matching those
+      const $or = [];
+      if (Email) {
+        $or.push({ EMAIL: Email });
+      }
+      if (Phone) {
+        $or.push({ PHONE_NO: Phone });
+      }
+      if ($or.length > 0) {
+        query.$or = $or;
+      }
     }
 
     // Fetch leads based on query and sort by _id in descending order (newest first)
