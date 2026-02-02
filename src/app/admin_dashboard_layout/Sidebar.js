@@ -14,8 +14,6 @@ import {
   FaWhatsapp,
   FaEdit,
   FaEnvelope,
-  FaBlog,
-  FaCalendarAlt,
   FaCog,
   FaChevronDown,
   FaChevronRight,
@@ -131,19 +129,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               label="Contact Leads"
             />
 
-            {/* Classes */}
-            <SidebarLink
-              href="/admin/class-schedule"
-              icon={<FaCalendarAlt />}
-              label="Class Schedule"
-            />
-
-            {/* Payments */}
-            <SidebarLink
-              href="/admin/student-payment/data"
-              icon={<FaCreditCard />}
-              label="Payments"
-            />
 
             {/* WhatsApp Section */}
             <MenuSection
@@ -247,12 +232,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               />
             </MenuSection>
 
-            {/* Blog */}
-            <SidebarLink
-              href="/admin/blog/fetch"
-              icon={<FaBlog />}
-              label="Blog"
-            />
 
             {/* Login Attempts */}
             <MenuSection
@@ -282,12 +261,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               label="Register User"
             />
 
-            {/* Courses */}
-            <SidebarLink
-              href="/admin/courses/get-data"
-              icon={<FaDatabase />}
-              label="Courses"
-            />
 
             {/* Settings Section */}
             <MenuSection

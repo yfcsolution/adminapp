@@ -187,9 +187,6 @@ export default function StickyNavbar() {
             )}
         </div>
 
-        <Link href="/blog" className="text-black hover:text-teal-600  font-medium">
-            Blog
-        </Link>
         <Link href="/about-us" className="text-black hover:text-teal-600  font-medium">
             About Us
         </Link>

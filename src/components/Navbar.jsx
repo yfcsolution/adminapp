@@ -380,13 +380,6 @@ export default function Navbar() {
           </div>
 
           <Link
-            href="/blog"
-            className="hover:text-teal-200 font-medium text-sm transition duration-200 flex items-center space-x-1.5"
-          >
-            <DocumentTextIcon className="w-4 h-4" />
-            <span>Blog</span>
-          </Link>
-          <Link
             href="/about-us"
             className="hover:text-teal-200 font-medium text-sm transition duration-200 flex items-center space-x-1.5"
           >

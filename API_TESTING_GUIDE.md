@@ -94,7 +94,7 @@ curl -X OPTIONS http://localhost:3000/api/leads/manual-sync \
 
 #### Test Direct ERP API:
 ```bash
-curl -X POST https://erp.yourfuturecampus.com/ords/yfcerp/YfcLeads/insertleads \
+curl -X POST https://erp.yourfuturecampus.com/yfc/apps/erp/YfcLeads/insertleads \
   -H "Content-Type: application/json" \
   -d '{
     "LEAD_ID": "TEST_123",
@@ -146,7 +146,7 @@ curl -X POST https://erp.yourfuturecampus.com/ords/yfcerp/YfcLeads/insertleads \
    - Check database connection
 
 4. **Network Errors**
-   - Verify ERP URL is accessible: `https://erp.yourfuturecampus.com/ords`
+   - Verify ERP URL is accessible: `https://erp.yourfuturecampus.com/yfc/apps`
    - Check firewall/network settings
 
 ## 📝 Testing Checklist
@@ -163,7 +163,7 @@ curl -X POST https://erp.yourfuturecampus.com/ords/yfcerp/YfcLeads/insertleads \
 
 1. **Check Server Logs**: Look for console.log outputs in your API routes
 2. **Network Tab**: Use browser DevTools Network tab to see request/response details
-3. **ERP URL**: Verify `https://erp.yourfuturecampus.com/ords` is accessible
+3. **ERP URL**: Verify `https://erp.yourfuturecampus.com/yfc/apps` is accessible
 4. **Database**: Ensure MongoDB connection is working
 5. **Environment Variables**: Check if all required env vars are set
 

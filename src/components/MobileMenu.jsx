@@ -170,9 +170,6 @@ export default function Navbar({ shortCourses, regularCourses, isMenuOpen, setIs
                 </div>
 
                 <div onClick={() => setIsMenuOpen(false)} className="hover:text-green-400 font-medium cursor-pointer transition-colors duration-200">
-                    <Link href="/blog">Blog</Link>
-                </div>
-                <div onClick={() => setIsMenuOpen(false)} className="hover:text-green-400 font-medium cursor-pointer transition-colors duration-200">
                     <Link href="/about-us">About Us</Link>
                 </div>
                 <div onClick={() => setIsMenuOpen(false)} className="hover:text-green-400 font-medium cursor-pointer transition-colors duration-200">

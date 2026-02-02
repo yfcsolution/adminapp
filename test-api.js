@@ -10,7 +10,7 @@ const axios = require('axios');
 
 // Configuration
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-const ERP_BASE_URL = 'https://erp.yourfuturecampus.com/ords';
+const ERP_BASE_URL = 'https://erp.yourfuturecampus.com/yfc/apps';
 
 // Test results
 const results = {
