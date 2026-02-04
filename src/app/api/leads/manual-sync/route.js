@@ -45,42 +45,93 @@ export async function POST(req) {
       WHATSAPP_STATUS: lead.WHATSAPP_STATUS,
     };
     // Send the lead data to the Oracle endpoint
-    const response = await axios.post(
-      `${ERP_BASE_URL}/yfcerp/YfcLeads/insertleads`,
-      leadData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (response.status == 200) {
-      // Mark lead as synced after successful insertion
-      lead.syncedToOracle = true;
-      await lead.save();
-
-      return NextResponse.json({
-        message: "Lead synced successfully",
-        success: true,
-      });
-    } else {
-      console.error("Oracle response error:", response.data.error);
-      return NextResponse.json(
+    try {
+      const response = await axios.post(
+        `${ERP_BASE_URL}/erp/YfcLeads/insertleads`,
+        leadData,
         {
-          message: "Failed to sync lead to Oracle",
-          error: response.data.error,
-          success: false,
-        },
-        { status: 500 }
+          headers: {
+            "Content-Type": "application/json",
+          },
+          validateStatus: function (status) {
+            // Accept all status codes to handle errors manually
+            return status >= 200 && status < 600;
+          },
+        }
       );
+
+      if (response.status === 200) {
+        // Mark lead as synced after successful insertion
+        lead.syncedToOracle = true;
+        await lead.save();
+
+        return NextResponse.json({
+          message: "Lead synced successfully",
+          success: true,
+        });
+      } else {
+        console.error("Oracle response error:", {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data,
+        });
+        return NextResponse.json(
+          {
+            message: "Failed to sync lead to Oracle",
+            error: response.data?.error || response.data?.message || `ERP returned status ${response.status}`,
+            success: false,
+          },
+          { status: 500 }
+        );
+      }
+    } catch (axiosError) {
+      // Handle axios-specific errors
+      if (axiosError.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Oracle API error response:", {
+          status: axiosError.response.status,
+          statusText: axiosError.response.statusText,
+          data: axiosError.response.data,
+        });
+        return NextResponse.json(
+          {
+            message: "Failed to sync lead to Oracle",
+            error: axiosError.response.data?.error || axiosError.response.data?.message || `ERP returned status ${axiosError.response.status}`,
+            success: false,
+          },
+          { status: 500 }
+        );
+      } else if (axiosError.request) {
+        // The request was made but no response was received
+        console.error("Oracle API request error - no response:", axiosError.message);
+        return NextResponse.json(
+          {
+            message: "Failed to connect to Oracle ERP",
+            error: "No response received from ERP server. Please check network connectivity.",
+            success: false,
+          },
+          { status: 500 }
+        );
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error("Oracle API setup error:", axiosError.message);
+        return NextResponse.json(
+          {
+            message: "Failed to sync lead to Oracle",
+            error: axiosError.message,
+            success: false,
+          },
+          { status: 500 }
+        );
+      }
     }
   } catch (error) {
-    console.error("Error during lead sync:", error.message);
+    console.error("Error during lead sync:", error);
     return NextResponse.json(
       {
         message: "An unexpected error occurred",
-        error: error.message,
+        error: error.message || "Unknown error",
         success: false,
       },
       { status: 500 }

@@ -123,11 +123,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               icon={<FaUsers />}
               label="Family Contacts"
             />
-            <SidebarLink
-              href="/admin/contact/leads"
-              icon={<FaAddressBook />}
-              label="Contact Leads"
-            />
 
 
             {/* WhatsApp Section */}

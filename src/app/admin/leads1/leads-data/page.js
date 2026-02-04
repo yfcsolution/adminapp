@@ -150,10 +150,20 @@ const LeadsData = () => {
   const handleSyncClick = async (LEAD_ID) => {
     try {
       const response = await axios.post("/api/leads/manual-sync", { LEAD_ID });
-      toast.success(response.data.message);
+      if (response.data.success) {
+        toast.success(response.data.message);
+        // Refresh the leads data after successful sync
+        fetchLeadsData();
+      } else {
+        toast.error(response.data.message || "Failed to sync lead");
+      }
     } catch (error) {
-      console.error("Error occurred during sync:", error.message);
-      toast.error("Error occurred during sync:", error.message);
+      console.error("Error occurred during sync:", error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          "An unexpected error occurred during sync";
+      toast.error(errorMessage);
     }
   };
 

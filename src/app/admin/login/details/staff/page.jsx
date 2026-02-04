@@ -15,12 +15,29 @@ const AdminLoginAttempts = () => {
   const itemsPerPage = 10;
   const [totalPages, setTotalPages] = useState(1);
 
+  // Filter states
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showAll, setShowAll] = useState(true);
+
   // Fetch only admin (staff) login attempts with server-side pagination
   const fetchAttempts = async () => {
     setLoading(true);
     try {
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        showAll: showAll,
+      };
+
+      // Only add date filters if showAll is false and dates are provided
+      if (!showAll && startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+      }
+
       const response = await axios.get("/api/users/login_attempts", {
-        params: { page: currentPage, limit: itemsPerPage },
+        params,
       });
       // Data returned includes { data, total, page, totalPages }
       setAttempts(response.data.data || []);
@@ -35,7 +52,20 @@ const AdminLoginAttempts = () => {
 
   useEffect(() => {
     fetchAttempts();
-  }, [currentPage]);
+  }, [currentPage, startDate, endDate, showAll]);
+
+  const handleFilterChange = () => {
+    setCurrentPage(1); // Reset to first page when filter changes
+    fetchAttempts();
+  };
+
+  const handleShowAllChange = (e) => {
+    setShowAll(e.target.checked);
+    if (e.target.checked) {
+      setStartDate("");
+      setEndDate("");
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -45,6 +75,66 @@ const AdminLoginAttempts = () => {
           <h2 className="px-4 py-2 rounded-lg font-semibold text-teal-600 bg-teal-100">
             Staff Login Attempts
           </h2>
+        </div>
+
+        {/* Filters Section */}
+        <div className="mb-6 bg-white p-4 rounded-lg shadow-md border border-teal-300">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            {/* Show All Checkbox */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="showAll"
+                checked={showAll}
+                onChange={handleShowAllChange}
+                className="w-4 h-4 text-teal-600 border-teal-300 rounded focus:ring-teal-500"
+              />
+              <label htmlFor="showAll" className="text-sm font-medium text-teal-700">
+                Show All Data
+              </label>
+            </div>
+
+            {/* Date Filters */}
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+              <div className="flex flex-col">
+                <label htmlFor="startDate" className="text-sm font-medium text-teal-700 mb-1">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  id="startDate"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  disabled={showAll}
+                  className="px-3 py-2 border border-teal-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="endDate" className="text-sm font-medium text-teal-700 mb-1">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  id="endDate"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  disabled={showAll}
+                  className="px-3 py-2 border border-teal-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* Apply Filter Button */}
+            {!showAll && (
+              <button
+                onClick={handleFilterChange}
+                disabled={!startDate || !endDate}
+                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                Apply Filter
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Responsive view: Table for large screens, Cards for mobile/tablet */}

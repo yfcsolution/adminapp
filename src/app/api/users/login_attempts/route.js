@@ -7,17 +7,36 @@ export async function GET(req) {
   try {
     await connectDB();
 
-    // Get query parameters for pagination
+    // Get query parameters for pagination and filtering
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const showAll = searchParams.get("showAll") === "true";
 
-    // Get total number of documents
-    const total = await AdminLoginAttempt.countDocuments();
+    // Build query filter
+    let query = {};
+    
+    // Apply date filter if dates are provided and showAll is false
+    if (!showAll && startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      // Set end date to end of day (23:59:59)
+      end.setHours(23, 59, 59, 999);
+      
+      query.loginTime = {
+        $gte: start,
+        $lte: end,
+      };
+    }
+
+    // Get total number of documents matching the filter
+    const total = await AdminLoginAttempt.countDocuments(query);
 
     // Fetch login attempts sorted by loginTime descending with pagination
-    const loginAttempts = await AdminLoginAttempt.find()
+    const loginAttempts = await AdminLoginAttempt.find(query)
       .sort({ loginTime: -1 })
       .skip(skip)
       .limit(limit)
